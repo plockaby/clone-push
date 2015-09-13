@@ -1,0 +1,43 @@
+#!/usr/bin/env python2.7
+from fabric.api import env, execute, lcd, local, abort
+from pushlib.copy import *
+
+
+# override what we're deploying right here
+env.clone_path = "push/common"
+#env.host_path = "/srv/wwwdata"
+#env.host_user = "wwwdata"
+
+# we want to skip running gitattributes
+#env.skip_attributes = True
+
+# we also want to skip tests on ourself
+#env.skip_tests = True
+
+# don't want to create wrappers for anything in bin
+#env.skip_wrappers = True
+
+# don't want to require a tag
+#env.no_tag = True
+
+# if we're deploying ourselves we must do it from the dev version
+if (__file__.startswith(env.host_path)):
+    abort("Must deploy push using \"./push\" and not \"push\".")
+
+
+# override the build method
+class CustomBuildTask(CopyBuildTask):
+    __doc__ = CopyBuildTask.__doc__
+
+    def run(self):
+        super(CustomBuildTask, self).run()
+
+        # rename "bin" to "push"
+        with lcd(env.release_dir):
+            local("mv bin push")
+
+        # the trailing slashes are for rsync
+        execute(CopyDirectoryTask(), 'shared', 'push/')
+
+
+buildTask = CustomBuildTask()
