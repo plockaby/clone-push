@@ -69,7 +69,7 @@ env.archive_name = "{}-version-{}.tar.gz".format(env.project_name, env.repo_vers
 # flags for tar and rsync
 env.tar_c_flags = "-p"
 env.tar_x_flags = "-p --no-same-owner --overwrite-dir"
-env.rsync_flags = "-aH --numeric-ids --exclude=.git --exclude=.gitignore --exclude={git_root}/.gitignore --exclude-from={git_root}/.gitignore".format(git_root=env.git_root_dir)
+env.rsync_flags = "-aH --numeric-ids --exclude=.git --exclude=.gitignore --exclude={git_root}/.gitignore --exclude-from=.gitignore --exclude-from={git_root}/.gitignore".format(git_root=env.git_root_dir)
 
 
 class CleanTask(Task):
