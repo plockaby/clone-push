@@ -28,6 +28,10 @@ env.release_dir     = "{}/release".format(env.containment_dir)
 env.temp_dir        = "{}/temp".format(env.containment_dir)
 
 
+# keep track of what tasks we have run so that we don't run them again
+env.completed_tasks = {}
+
+
 # the path to the root of the git repository
 with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
     env.git_root_dir = local("{} rev-parse --show-toplevel".format(env.git), capture=True)
@@ -80,8 +84,15 @@ class CleanTask(Task):
     name = "clean"
 
     def run(self):
+        # don't run this class more than once
+        if (self.__class__.__name__ in env.completed_tasks and env.completed_tasks[self.__class__.__name__]):
+            return
+
         local("rm -rf {}".format(env.containment_dir))
         print(green("Finished cleaning project."))
+
+        # record that we've run this step
+        env.completed_tasks[self.__class__.__name__] = True
 
 
 class MostlyCleanTask(Task):
@@ -92,11 +103,18 @@ class MostlyCleanTask(Task):
     name = "mostlyclean"
 
     def run(self):
+        # don't run this class more than once
+        if (self.__class__.__name__ in env.completed_tasks and env.completed_tasks[self.__class__.__name__]):
+            return
+
         local("rm -rf {}".format(env.build_dir))
         local("rm -rf {}".format(env.release_dir))
         local("rm -rf {}".format(env.archive_dir))
         local("rm -rf {}".format(env.temp_dir))
         print(green("Finished mostly cleaning project."))
+
+        # record that we've run this step
+        env.completed_tasks[self.__class__.__name__] = True
 
 
 class BuildTask(Task):
@@ -113,6 +131,10 @@ class BuildTask(Task):
         pass
 
     def run(self):
+        # don't run this class more than once
+        if (self.__class__.__name__ in env.completed_tasks and env.completed_tasks[self.__class__.__name__]):
+            return
+
         # run prereqs
         execute('clean')
 
@@ -134,6 +156,9 @@ class BuildTask(Task):
 
         print(green("Finished building project."))
 
+        # record that we've run this step
+        env.completed_tasks[self.__class__.__name__] = True
+
 
 class TestTask(Task):
     """
@@ -149,6 +174,10 @@ class TestTask(Task):
         pass
 
     def run(self):
+        # don't run this class more than once
+        if (self.__class__.__name__ in env.completed_tasks and env.completed_tasks[self.__class__.__name__]):
+            return
+
         # run prereqs
         execute('build')
 
@@ -162,6 +191,9 @@ class TestTask(Task):
         self.post_hook()
 
         print(green("Finished testing project."))
+
+        # record that we've run this step
+        env.completed_tasks[self.__class__.__name__] = True
 
 
 class ArchiveTask(Task):
@@ -178,6 +210,10 @@ class ArchiveTask(Task):
         pass
 
     def run(self):
+        # don't run this class more than once
+        if (self.__class__.__name__ in env.completed_tasks and env.completed_tasks[self.__class__.__name__]):
+            return
+
         # run prereqs
         execute('test')
 
@@ -196,6 +232,9 @@ class ArchiveTask(Task):
         self.post_hook()
 
         print(green("Finished creating archive."))
+
+        # record that we've run this step
+        env.completed_tasks[self.__class__.__name__] = True
 
 
 class LiveTask(Task):
