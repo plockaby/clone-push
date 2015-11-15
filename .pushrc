@@ -25,13 +25,11 @@ if (__file__.startswith(env.host_path)):
     abort("Must deploy push using \"./push\" and not \"push\".")
 
 
-# override the build method
-class CustomBuildTask(CopyBuildTask):
-    __doc__ = CopyBuildTask.__doc__
+# override the archive method
+class CustomArchiveTask(CopyArchiveTask):
+    __doc__ = CopyArchiveTask.__doc__
 
-    def run(self):
-        super(CustomBuildTask, self).run()
-
+    def pre_hook(self):
         # rename "bin" to "push"
         with lcd(env.release_dir):
             local("mv bin push")
@@ -40,4 +38,4 @@ class CustomBuildTask(CopyBuildTask):
         execute(CopyDirectoryTask(), 'shared', 'push/')
 
 
-buildTask = CustomBuildTask()
+archiveTask = CustomArchiveTask()

@@ -106,9 +106,18 @@ class BuildTask(Task):
 
     name = "build"
 
+    def pre_hook(self):
+        pass
+
+    def post_hook(self):
+        pass
+
     def run(self):
         # run prereqs
         execute('clean')
+
+        # call pre hooks
+        self.pre_hook()
 
         # create release directories, build directory gets created by rsync
         local("rm -rf {}".format(env.release_dir))
@@ -120,6 +129,9 @@ class BuildTask(Task):
         local("rm -rf {}".format(env.build_dir))
         execute(CopyDirectoryTask(), "{}/".format(env.current_dir), env.build_dir)
 
+        # call post hooks
+        self.post_hook()
+
         print(green("Finished building project."))
 
 
@@ -130,12 +142,24 @@ class TestTask(Task):
 
     name = "test"
 
+    def pre_hook(self):
+        pass
+
+    def post_hook(self):
+        pass
+
     def run(self):
         # run prereqs
         execute('build')
 
+        # call pre hooks
+        self.pre_hook()
+
         # no tests by default
         local("mkdir -p {}".format(env.test_dir))
+
+        # call post hooks
+        self.post_hook()
 
         print(green("Finished testing project."))
 
@@ -147,9 +171,18 @@ class ArchiveTask(Task):
 
     name = "archive"
 
+    def pre_hook(self):
+        pass
+
+    def post_hook(self):
+        pass
+
     def run(self):
         # run prereqs
         execute('test')
+
+        # call pre hooks
+        self.pre_hook()
 
         # can't do anything if there is no release directory
         if (not os.path.isdir(env.release_dir)):
@@ -158,6 +191,9 @@ class ArchiveTask(Task):
         # create the archive
         local("mkdir -p {}".format(env.archive_dir))
         local("{tar} -czf {archive_directory}/{archive_name} -C {release_directory} {flags} .".format(tar=env.tar, archive_directory=env.archive_dir, archive_name=env.archive_name, release_directory=env.release_dir, flags=env.tar_c_flags))
+
+        # call post hooks
+        self.post_hook()
 
         print(green("Finished creating archive."))
 
@@ -169,9 +205,18 @@ class LiveTask(Task):
 
     name = "live"
 
+    def pre_hook(self):
+        pass
+
+    def post_hook(self):
+        pass
+
     def run(self, *roles):
         # run prereqs
         execute('archive')
+
+        # call pre hooks
+        self.pre_hook()
 
         if (not os.path.isfile("{}/{}".format(env.archive_dir, env.archive_name))):
             abort("No archive file found. Cannot distribute project.")
@@ -219,6 +264,9 @@ class LiveTask(Task):
         with settings(hosts=hosts):
             execute("deploy", env.host_user, "{}/{}".format(env.archive_dir, env.archive_name), env.host_path)
 
+        # call post hooks
+        self.post_hook()
+
         print(green("Finished deploying project."))
 
 
@@ -229,9 +277,18 @@ class CloneTask(Task):
 
     name = "clone"
 
+    def pre_hook(self):
+        pass
+
+    def post_hook(self):
+        pass
+
     def run(self):
         # run prereqs
         execute('archive')
+
+        # call pre hooks
+        self.pre_hook()
 
         if (not os.path.isfile("{}/{}".format(env.archive_dir, env.archive_name))):
             abort("No archive file found. Cannot distribute project.")
@@ -270,6 +327,9 @@ class CloneTask(Task):
         with settings(hosts=hosts):
             execute("deploy", env.host_user, "{}/{}".format(env.archive_dir, env.archive_name), "{}/{}{}".format(env.clone_base_dir, env.clone_path, env.host_path))
 
+        # call post hooks
+        self.post_hook()
+
         print(green("Finished cloning project."))
 
 
@@ -299,8 +359,17 @@ class DeployTask(Task):
 
     name = "deploy"
 
+    def pre_hook(self):
+        pass
+
+    def post_hook(self):
+        pass
+
     def run(self, user, archive_file, remote_path):
         print(cyan("Deploying {} to {} in {} as {}.".format(archive_file, env.host_string, remote_path, user)))
+
+        # call pre hooks
+        self.pre_hook()
 
         # we're going to put it into /tmp
         remote_archive_file = "/tmp/{}".format(os.path.basename(archive_file))
@@ -309,3 +378,6 @@ class DeployTask(Task):
         sudo("mkdir -p {prefix}".format(prefix=remote_path), user=user)
         sudo("{tar} zxf {archive} -C {prefix} {flags}".format(tar=env.tar, archive=remote_archive_file, prefix=remote_path, flags=env.tar_x_flags), user=user)
         run("rm -f {}".format(remote_archive_file))
+
+        # call post hooks
+        self.post_hook()
