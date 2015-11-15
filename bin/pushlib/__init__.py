@@ -36,9 +36,9 @@ with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
 # get the latest commit/tag and branch of the repo or HEAD if no commit/tag and/or branch
 with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
     if (int(local("ls {}/.git/refs/heads/ | wc -l | tr -d ' '".format(env.git_root_dir), capture=True)) != 0):
-        env.repo_commit_name = local("{} describe --always --tags".format(env.git), capture=True)
-        env.repo_branch_name = local("{} rev-parse --abbrev-ref HEAD".format(env.git), capture=True)
-        env.repo_tag_name = local("{} describe --tags --exact-match".format(env.git), capture=True)
+        env.repo_commit_name = local("{} describe --always --tags".format(env.git), capture=True).strip()
+        env.repo_branch_name = local("{} rev-parse --abbrev-ref HEAD".format(env.git), capture=True).strip()
+        env.repo_tag_name = local("{} describe --tags --exact-match".format(env.git), capture=True).strip()
 
     if ("repo_commit_name" not in env or env.repo_commit_name is None or env.repo_commit_name == ""):
         env.repo_commit_name = "HEAD"
