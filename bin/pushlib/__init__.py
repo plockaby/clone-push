@@ -84,9 +84,8 @@ class CleanTask(Task):
     name = "clean"
 
     def run(self):
-        # don't run this class more than once
-        if (self.__class__.__name__ in env.completed_tasks and env.completed_tasks[self.__class__.__name__]):
-            return
+        # clean absolutely everything
+        env.completed_tasks = {}
 
         local("rm -rf {}".format(env.containment_dir))
         print(green("Finished cleaning project."))
@@ -103,9 +102,8 @@ class MostlyCleanTask(Task):
     name = "mostlyclean"
 
     def run(self):
-        # don't run this class more than once
-        if (self.__class__.__name__ in env.completed_tasks and env.completed_tasks[self.__class__.__name__]):
-            return
+        # clean absolutely everything
+        env.completed_tasks = {}
 
         local("rm -rf {}".format(env.build_dir))
         local("rm -rf {}".format(env.release_dir))
