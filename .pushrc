@@ -8,14 +8,8 @@ env.clone_path = "push/common"
 #env.host_path = "/srv/wwwdata"
 #env.host_user = "wwwdata"
 
-# we want to skip running gitattributes
-#env.skip_attributes = True
-
 # we also want to skip tests on ourself
 #env.skip_tests = True
-
-# don't want to create wrappers for anything in bin
-#env.skip_wrappers = True
 
 # don't want to require a tag
 #env.no_tag = True
