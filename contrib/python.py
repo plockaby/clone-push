@@ -26,8 +26,8 @@ class PythonCleanTask(pushlib.CleanTask):
 class PythonBuildTask(pushlib.BuildTask):
     __doc__ = pushlib.BuildTask.__doc__
 
-    def run(self):
-        super(PythonBuildTask, self).run()
+    def after(self):
+        super(PythonBuildTask, self).after()
 
         layout = """--root={release_directory} \
                     --install-purelib={release_lib_directory} \
@@ -52,8 +52,8 @@ class PythonBuildTask(pushlib.BuildTask):
 class PythonTestTask(pushlib.TestTask):
     __doc__ = pushlib.TestTask.__doc__
 
-    def run(self):
-        super(PythonTestTask, self).run()
+    def after(self):
+        super(PythonTestTask, self).after()
 
         # run python tests
         if ("skip_tests" not in env or (str(env.skip_tests) != "True" and str(env.skip_tests) != "1")):

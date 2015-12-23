@@ -27,8 +27,8 @@ class PerlCleanTask(pushlib.CleanTask):
 class PerlBuildTask(pushlib.BuildTask):
     __doc__ = pushlib.BuildTask.__doc__
 
-    def run(self):
-        super(PerlBuildTask, self).run()
+    def after(self):
+        super(PerlBuildTask, self).after()
 
         # build the project using perl's build system
         if (os.path.isfile("{}/Makefile.PL".format(env.build_dir))):
@@ -67,8 +67,8 @@ class PerlBuildTask(pushlib.BuildTask):
 class PerlTestTask(pushlib.TestTask):
     __doc__ = pushlib.TestTask.__doc__
 
-    def run(self):
-        super(PerlTestTask, self).run()
+    def after(self):
+        super(PerlTestTask, self).after()
 
         # run perl tests
         if ("skip_tests" not in env or (str(env.skip_tests) != "True" and str(env.skip_tests) != "1")):
