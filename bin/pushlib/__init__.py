@@ -234,20 +234,6 @@ class LiveTask(Task):
         # call before hooks
         self.before()
 
-        if (not os.path.isfile("{}/{}".format(env.archive_dir, env.archive_name))):
-            abort("No archive file found. Cannot distribute project.")
-
-        if ("no_tag" not in env or (str(env.no_tag) != "True" and str(env.no_tag) != "1")):
-            if (env.repo_is_dirty):
-                warn("Repository is dirty and thus not tagged.")
-            if (env.repo_tag_name is None):
-                warn("This revision is not tagged.")
-
-            if (not env.repo_is_dirty and env.repo_tag_name is not None):
-                print(green("Project is tagged at version {} and ready for release.".format(env.repo_tag_name)))
-        else:
-            print(yellow("Not checking to see if the project is tagged because 'no_tag' is set."))
-
         # these are all the hosts we're going to deploy to
         hosts = []
 
@@ -278,7 +264,12 @@ class LiveTask(Task):
 
         # don't do it in parallel, sometimes the plugin modules have prompts.
         with settings(hosts=hosts):
-            execute("deploy", env.host_user, "{}/{}".format(env.archive_dir, env.archive_name), env.host_path)
+            execute("deploy",
+                archive_file="{}/{}".format(env.archive_dir, env.archive_name),
+                remote_user=env.host_user,
+                remote_path=env.host_path,
+                check_for_tag=False,
+            )
 
         # call after hooks
         self.after()
@@ -306,22 +297,6 @@ class CloneTask(Task):
         # call before hooks
         self.before()
 
-        if (not os.path.isfile("{}/{}".format(env.archive_dir, env.archive_name))):
-            abort("No archive file found. Cannot distribute project.")
-
-        # see if the repo is clean and tagged before deploying to clone
-        # something that isn't "production quality".
-        if ("no_tag" not in env or (str(env.no_tag) != "True" and str(env.no_tag) != "1")):
-            if (env.repo_is_dirty and not confirm(red("Repository is dirty and thus not tagged. Deploy anyway?"))):
-                abort("Aborting at user request.")
-            if (env.repo_tag_name is None and not confirm(red("This revision is not tagged. Deploy anyway?"))):
-                abort("Aborting at user request.")
-
-            if (not env.repo_is_dirty and env.repo_tag_name is not None):
-                print(green("Project is tagged at version {} and ready for release.".format(env.repo_tag_name)))
-        else:
-            print(yellow("Not checking to see if the project is tagged because 'no_tag' is set."))
-
         # these are all the hosts we're going to deploy to
         hosts = []
 
@@ -341,7 +316,12 @@ class CloneTask(Task):
             abort("No hosts found for deployment")
 
         with settings(hosts=hosts):
-            execute("deploy", env.host_user, "{}/{}".format(env.archive_dir, env.archive_name), "{}/{}{}".format(env.clone_base_dir, env.clone_path, env.host_path))
+            execute("deploy",
+                archive_file="{}/{}".format(env.archive_dir, env.archive_name),
+                remote_user=env.host_user,
+                remote_path="{}/{}{}".format(env.clone_base_dir, env.clone_path, env.host_path),
+                check_for_tag=True,
+            )
 
         # call after hooks
         self.after()
@@ -370,30 +350,68 @@ class CopyDirectoryTask(Task):
 
 class DeployTask(Task):
     """
-        given a username, the path to an archive file, and the path on the remote host, untar the file on the remote hosts as the given user
+        deploys the given file to the given host as the given user -- defaults to localhost
     """
 
     name = "deploy"
 
-    def before(self):
+    def before(self, **kwargs):
         pass
 
-    def after(self):
+    def after(self, **kwargs):
         pass
 
-    def run(self, user, archive_file, remote_path):
-        print(cyan("Deploying {} to {} in {} as {}.".format(archive_file, env.host_string, remote_path, user)))
+    def run(self, **kwargs):
+        # run prereqs
+        execute('archive')
+
+        # set default arguments. this is being set like this so that when we
+        # forward the arguments to "before" and "after" that they get the
+        # default values that we set in here.
+        kwargs['archive_file'] = kwargs.get('archive_file', "{}/{}".format(env.archive_dir, env.archive_name))
+        kwargs['remote_user'] = kwargs.get('remote_user', env.host_user)
+        kwargs['remote_path'] = kwargs.get('remote_path', env.host_path)
+        kwargs['check_for_tag'] = kwargs.get('check_for_tag', False)
+
+        # now get the values we're going to use
+        archive_file = kwargs.get('archive_file')
+        remote_user = kwargs.get('remote_user')
+        remote_path = kwargs.get('remote_path')
+        check_for_tag = kwargs.get('check_for_tag')
+
+        print(cyan("Deploying {} to {}:{} as user {}.".format(archive_file, env.host_string, remote_path, remote_user)))
 
         # call before hooks
-        self.before()
+        self.before(**kwargs)
+
+        if (not os.path.isfile("{}/{}".format(env.archive_dir, env.archive_name))):
+            abort("No archive file found. Cannot distribute project.")
+
+        if ("no_tag" not in env or (str(env.no_tag) != "True" and str(env.no_tag) != "1")):
+            if (check_for_tag):
+                if (env.repo_is_dirty and not confirm(red("Repository is dirty and thus not tagged. Deploy anyway?"))):
+                    abort("Aborting at user request.")
+                if (env.repo_tag_name is None and not confirm(red("This revision is not tagged. Deploy anyway?"))):
+                    abort("Aborting at user request.")
+                    warn("This revision is not tagged.")
+
+            if (not env.repo_is_dirty and env.repo_tag_name is not None):
+                print(green("Project is tagged at version {} and ready for release.".format(env.repo_tag_name)))
+            else:
+                if (env.repo_is_dirty):
+                    warn("Repository is dirty and thus not tagged.")
+                if (env.repo_tag_name is None):
+                    warn("This revision is not tagged.")
+        else:
+            print(yellow("Not checking to see if the project is tagged because 'no_tag' is set."))
 
         # we're going to put it into /tmp
         remote_archive_file = "/tmp/{}".format(os.path.basename(archive_file))
 
         put(archive_file, remote_archive_file)
-        sudo("mkdir -p {prefix}".format(prefix=remote_path), user=user)
-        sudo("{tar} zxf {archive} -C {prefix} {flags}".format(tar=env.tar, archive=remote_archive_file, prefix=remote_path, flags=env.tar_x_flags), user=user)
+        sudo("mkdir -p {prefix}".format(prefix=remote_path), user=remote_user)
+        sudo("{tar} zxf {archive} -C {prefix} {flags}".format(tar=env.tar, archive=remote_archive_file, prefix=remote_path, flags=env.tar_x_flags), user=remote_user)
         run("rm -f {}".format(remote_archive_file))
 
         # call after hooks
-        self.after()
+        self.after(**kwargs)

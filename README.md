@@ -261,12 +261,14 @@ installed using `sudo` on the remote host to the configured user. The archived
 file is placed under `/tmp` before deployment and then removed after
 deployment.
 
-* **deploy:username,archive,path**
+* **deploy**
 
-Takes an archive and untars it into the given path as the given user on the
-hostnames in the given list. This task is usually called by the *live* task but
-this is the task that should be overridden when one wants to run something on
-each host when deploying. The hostname can be found in `env.host_string`.
+Deploys a tar file to a remote host. By default this will deploy the created
+archive and ask for the host to which to deploy using the configured user.
+Normally this task will be called by _live_ and _clone_ rather than directly.
+The arguments that can be used when calling this method directly include:
+`archive_name`, `remote_user`, `remote_path`, and `check_for_tag`. This task
+expects the host to be defined in `env.host_string`.
 
 * **clone**
 
