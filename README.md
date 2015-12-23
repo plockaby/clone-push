@@ -177,14 +177,13 @@ JSLint against your project, too, you might write a `.pushrc` file like this:
         __doc__ = pushlib.DeployTask.__doc__
 
 
-    cleanTask       = CustomCleanTask()
-    mostlyCleanTask = CustomMostlyCleanTask()
-    buildTask       = CustomBuildTask()
-    testTask        = CustomTestTask()
-    archiveTask     = CustomArchiveTask()
-    liveTask        = CustomLiveTask()
-    cloneTask       = CustomCloneTask()
-    deployTask      = CustomDeployTask()
+    cleanTask   = CustomCleanTask()
+    buildTask   = CustomBuildTask()
+    testTask    = CustomTestTask()
+    archiveTask = CustomArchiveTask()
+    liveTask    = CustomLiveTask()
+    cloneTask   = CustomCloneTask()
+    deployTask  = CustomDeployTask()
 
 
 It may seem like a waste of time to write all those empty classes. However, you
@@ -205,7 +204,6 @@ tasks.
         clone        deploys the project to clone
         deploy       given a username, the path to an archive file, and the path on the remote host, untar the file on the remote hosts as the given user
         live         deploy the project locally or use "live:nickname" to deploy to a particular server
-        mostlyclean  remove all build artifacts except test output
         test         run tests
 
 
@@ -235,10 +233,6 @@ implements its own class that can also be overridden in the same way.
 * **clean**
 
 Cleans up all build artifacts.
-
-* **mostlyclean**
-
-Cleans up all build artifacts **except** test output.
 
 * **build**
 

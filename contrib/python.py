@@ -22,9 +22,6 @@ class PythonCleanTask(pushlib.CleanTask):
     __doc__ = pushlib.CleanTask.__doc__
 
 
-class PythonMostlyCleanTask(pushlib.MostlyCleanTask):
-    __doc__ = pushlib.MostlyCleanTask.__doc__
-
 
 class PythonBuildTask(pushlib.BuildTask):
     __doc__ = pushlib.BuildTask.__doc__
@@ -107,11 +104,11 @@ class CopyDirectoryTask(pushlib.CopyDirectoryTask):
     pass
 
 
-cleanTask       = PythonCleanTask()
-mostlyCleanTask = PythonMostlyCleanTask()
-buildTask       = PythonBuildTask()
-testTask        = PythonTestTask()
-archiveTask     = PythonArchiveTask()
-liveTask        = PythonLiveTask()
-cloneTask       = PythonCloneTask()
-deployTask      = PythonDeployTask()
+# all of these extra classes are defined so that they may be inherited
+cleanTask   = PythonCleanTask()
+buildTask   = PythonBuildTask()
+testTask    = PythonTestTask()
+archiveTask = PythonArchiveTask()
+liveTask    = PythonLiveTask()
+cloneTask   = PythonCloneTask()
+deployTask  = PythonDeployTask()

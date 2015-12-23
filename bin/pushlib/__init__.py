@@ -94,27 +94,6 @@ class CleanTask(Task):
         env.completed_tasks[self.__class__.__name__] = True
 
 
-class MostlyCleanTask(Task):
-    """
-        remove all build artifacts except test output
-    """
-
-    name = "mostlyclean"
-
-    def run(self):
-        # clean absolutely everything
-        env.completed_tasks = {}
-
-        local("rm -rf {}".format(env.build_dir))
-        local("rm -rf {}".format(env.release_dir))
-        local("rm -rf {}".format(env.archive_dir))
-        local("rm -rf {}".format(env.temp_dir))
-        print(green("Finished mostly cleaning project."))
-
-        # record that we've run this step
-        env.completed_tasks[self.__class__.__name__] = True
-
-
 class BuildTask(Task):
     """
         builds a copy of the project for testing and deployment

@@ -24,10 +24,6 @@ class PerlCleanTask(pushlib.CleanTask):
     __doc__ = pushlib.CleanTask.__doc__
 
 
-class PerlMostlyCleanTask(pushlib.MostlyCleanTask):
-    __doc__ = pushlib.MostlyCleanTask.__doc__
-
-
 class PerlBuildTask(pushlib.BuildTask):
     __doc__ = pushlib.BuildTask.__doc__
 
@@ -106,11 +102,11 @@ class CopyDirectoryTask(pushlib.CopyDirectoryTask):
     pass
 
 
-cleanTask       = PerlCleanTask()
-mostlyCleanTask = PerlMostlyCleanTask()
-buildTask       = PerlBuildTask()
-testTask        = PerlTestTask()
-archiveTask     = PerlArchiveTask()
-liveTask        = PerlLiveTask()
-cloneTask       = PerlCloneTask()
-deployTask      = PerlDeployTask()
+# all of these extra classes are defined so that they may be inherited
+cleanTask   = PerlCleanTask()
+buildTask   = PerlBuildTask()
+testTask    = PerlTestTask()
+archiveTask = PerlArchiveTask()
+liveTask    = PerlLiveTask()
+cloneTask   = PerlCloneTask()
+deployTask  = PerlDeployTask()

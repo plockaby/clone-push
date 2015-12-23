@@ -8,10 +8,6 @@ class CopyCleanTask(pushlib.CleanTask):
     __doc__ = pushlib.CleanTask.__doc__
 
 
-class CopyMostlyCleanTask(pushlib.MostlyCleanTask):
-    __doc__ = pushlib.MostlyCleanTask.__doc__
-
-
 class CopyBuildTask(pushlib.BuildTask):
     __doc__ = pushlib.BuildTask.__doc__
 
@@ -48,8 +44,8 @@ class CopyDirectoryTask(pushlib.CopyDirectoryTask):
     pass
 
 
+# all of these extra classes are defined so that they may be inherited
 cleanTask       = CopyCleanTask()
-mostlyCleanTask = CopyMostlyCleanTask()
 buildTask       = CopyBuildTask()
 testTask        = CopyTestTask()
 archiveTask     = CopyArchiveTask()
