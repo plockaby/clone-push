@@ -23,7 +23,7 @@ if (__file__.startswith(env.host_path)):
 class CustomArchiveTask(CopyArchiveTask):
     __doc__ = CopyArchiveTask.__doc__
 
-    def pre_hook(self):
+    def before(self):
         # rename "bin" to "push"
         with lcd(env.release_dir):
             local("mv bin push")

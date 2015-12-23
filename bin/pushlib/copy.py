@@ -11,8 +11,8 @@ class CopyCleanTask(pushlib.CleanTask):
 class CopyBuildTask(pushlib.BuildTask):
     __doc__ = pushlib.BuildTask.__doc__
 
-    def run(self):
-        super(CopyBuildTask, self).run()
+    def after(self):
+        super(CopyBuildTask, self).after()
 
         for path in ['bin', 'lib', 'etc', 'web', 'www']:
             execute(pushlib.CopyDirectoryTask(), path)
@@ -45,10 +45,10 @@ class CopyDirectoryTask(pushlib.CopyDirectoryTask):
 
 
 # all of these extra classes are defined so that they may be inherited
-cleanTask       = CopyCleanTask()
-buildTask       = CopyBuildTask()
-testTask        = CopyTestTask()
-archiveTask     = CopyArchiveTask()
-liveTask        = CopyLiveTask()
-cloneTask       = CopyCloneTask()
-deployTask      = CopyDeployTask()
+cleanTask   = CopyCleanTask()
+buildTask   = CopyBuildTask()
+testTask    = CopyTestTask()
+archiveTask = CopyArchiveTask()
+liveTask    = CopyLiveTask()
+cloneTask   = CopyCloneTask()
+deployTask  = CopyDeployTask()
