@@ -1,6 +1,5 @@
 #!/usr/bin/env python2.7
 
-import pushlib
 from fabric.api import env, sudo
 from fabric.colors import cyan, red
 from fabric.contrib.console import confirm
