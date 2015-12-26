@@ -8,6 +8,10 @@ class CopyCleanTask(pushlib.CleanTask):
     __doc__ = pushlib.CleanTask.__doc__
 
 
+class CopyMostlyCleanTask(pushlib.MostlyCleanTask):
+    __doc__ = pushlib.MostlyCleanTask.__doc__
+
+
 class CopyBuildTask(pushlib.BuildTask):
     __doc__ = pushlib.BuildTask.__doc__
 
@@ -44,11 +48,18 @@ class CopyDirectoryTask(pushlib.CopyDirectoryTask):
     pass
 
 
+# being passed along so it gets imported into .pushrc
+# not exported to fabric and not an executable task
+class CleanUpTask(pushlib.CleanUpTask):
+    pass
+
+
 # all of these extra classes are defined so that they may be inherited
-cleanTask   = CopyCleanTask()
-buildTask   = CopyBuildTask()
-testTask    = CopyTestTask()
-archiveTask = CopyArchiveTask()
-liveTask    = CopyLiveTask()
-cloneTask   = CopyCloneTask()
-deployTask  = CopyDeployTask()
+cleanTask       = CopyCleanTask()
+mostlyCleanTask = CopyMostlyCleanTask()
+buildTask       = CopyBuildTask()
+testTask        = CopyTestTask()
+archiveTask     = CopyArchiveTask()
+liveTask        = CopyLiveTask()
+cloneTask       = CopyCloneTask()
+deployTask      = CopyDeployTask()

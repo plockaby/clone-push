@@ -12,10 +12,8 @@ from fabric.contrib.console import confirm
 # don't import anything into public when someone loads us
 __all__ = []
 
-
 # colorize errors because!
 env.colorize_errors = True
-
 
 # define paths for doing work
 env.current_dir     = os.getcwd()
@@ -27,15 +25,12 @@ env.archive_dir     = "{}/archive".format(env.containment_dir)
 env.release_dir     = "{}/release".format(env.containment_dir)
 env.temp_dir        = "{}/temp".format(env.containment_dir)
 
-
 # keep track of what tasks we have run so that we don't run them again
 env.completed_tasks = {}
-
 
 # the path to the root of the git repository
 with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
     env.git_root_dir = local("{} rev-parse --show-toplevel".format(env.git), capture=True)
-
 
 # get the latest commit/tag and branch of the repo or HEAD if no commit/tag and/or branch
 with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
@@ -51,7 +46,6 @@ with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
     if ("repo_tag_name" not in env or env.repo_tag_name is None or env.repo_tag_name == ""):
         env.repo_tag_name = None
 
-
 # is set to "true" if the repository is dirty
 with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
     if (str(local("{} status -s".format(env.git), capture=True)) != ""):
@@ -59,16 +53,13 @@ with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
     else:
         env.repo_is_dirty = False
 
-
 # the name of the current directory, used as the tool name when doing certain tasks
 env.project_name = os.path.basename(os.path.normpath(os.getcwd()))
-
 
 # the name of the archive we will create when asked to create the archive
 # if the thing is dirty the append "dirty" to it
 env.repo_version = "{}{}".format(env.repo_commit_name, ("-dirty" if env.repo_is_dirty else ""))
 env.archive_name = "{}-version-{}.tar.gz".format(env.project_name, env.repo_version)
-
 
 # flags for tar and rsync
 env.tar_c_flags = "-p"
@@ -84,10 +75,31 @@ class CleanTask(Task):
     name = "clean"
 
     def run(self):
-        # clean absolutely everything
+        # clean absolutely everything, including the list of tasks that have been run
         env.completed_tasks = {}
 
         local("rm -rf {}".format(env.containment_dir))
+        print(green("Finished cleaning project."))
+
+        # record that we've run this step
+        env.completed_tasks[self.__class__.__name__] = True
+
+
+class MostlyCleanTask(Task):
+    """
+        removes everything but test output
+    """
+
+    name = "mostlyclean"
+
+    def run(self):
+        # clean absolutely everything, including the list of tasks that have been run
+        env.completed_tasks = {}
+
+        local("rm -rf {}".format(env.build_dir))
+        local("rm -rf {}".format(env.archive_dir))
+        local("rm -rf {}".format(env.release_dir))
+        local("rm -rf {}".format(env.temp_dir))
         print(green("Finished cleaning project."))
 
         # record that we've run this step
@@ -113,7 +125,7 @@ class BuildTask(Task):
             return
 
         # run prereqs
-        execute('clean')
+        execute('mostlyclean')
 
         # call before hooks
         self.before()
@@ -329,25 +341,6 @@ class CloneTask(Task):
         print(green("Finished cloning project."))
 
 
-class CopyDirectoryTask(Task):
-    name = "copy"
-
-    def run(self, source, destination=env.release_dir):
-        # if the source is not a full path then prepend it with the build
-        # directory.
-        if (not os.path.isabs(source)):
-            source = "{}/{}".format(env.build_dir, source)
-
-        # if the destination is not a full path then prepend it with the
-        # release directory.
-        if (not os.path.isabs(destination)):
-            destination = "{}/{}".format(env.release_dir, destination)
-
-        if (os.path.isdir(source)):
-            local("mkdir -p {}".format(destination))
-            local("{rsync} {flags} {source} {destination}".format(rsync=env.rsync, flags=env.rsync_flags, source=source, destination=destination))
-
-
 class DeployTask(Task):
     """
         deploys the given file to the given host as the given user -- defaults to localhost
@@ -415,3 +408,36 @@ class DeployTask(Task):
 
         # call after hooks
         self.after(**kwargs)
+
+
+class CleanUpTask(Task):
+    def run(self, remote_path, remote_user):
+        go_forth = False
+
+        # if the "force_clean_remote" flag is not set then ask the user if they want to delete things
+        if (str(env.get("force_clean_remote", False)) not in ["True", "1"]):
+            go_forth = True
+        else:
+            if (confirm(red("Are you sure you wish to remove {} on {}? (You can skip this question by setting env.force_clean_remote to True.)".format(remote_path, env.host_string)))):
+                go_forth = True
+
+        if (go_forth is True):
+            print(cyan("Removing {} from {}.".format(remote_path, env.host_string)))
+            sudo("rm -rf {}".format(remote_path), user=remote_user)
+
+
+class CopyDirectoryTask(Task):
+    def run(self, source, destination=env.release_dir):
+        # if the source is not a full path then prepend it with the build
+        # directory.
+        if (not os.path.isabs(source)):
+            source = "{}/{}".format(env.build_dir, source)
+
+        # if the destination is not a full path then prepend it with the
+        # release directory.
+        if (not os.path.isabs(destination)):
+            destination = "{}/{}".format(env.release_dir, destination)
+
+        if (os.path.isdir(source)):
+            local("mkdir -p {}".format(destination))
+            local("{rsync} {flags} {source} {destination}".format(rsync=env.rsync, flags=env.rsync_flags, source=source, destination=destination))
