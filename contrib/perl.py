@@ -41,9 +41,8 @@ class PerlBuildTask(pushlib.BuildTask):
         super(PerlBuildTask, self).after()
 
         # build the project using perl's build system.
-        if (os.path.isfile("{}/Makefile.PL".format(env.build_dir))):
-            with lcd(env.build_dir):
-                self.build()
+        with lcd(env.build_dir):
+            self.build()
 
         # we are NOT copying bin or lib because perl handles those for us.
         # but we do still care about these other ones.
@@ -72,13 +71,14 @@ class PerlBuildTask(pushlib.BuildTask):
                         release_man_directory=env.perl_release_man_dir
                     )
 
-        local("{} Makefile.PL {}".format(env.perl, layout))
-        local("make install")
+        if (os.path.isfile("{}/Makefile.PL".format(env.build_dir))):
+            local("{} Makefile.PL {}".format(env.perl, layout))
+            local("make install")
 
-        # get rid of cruft that isn't useful to us
-        local("find {} -type f -name .packlist -delete".format(env.perl_release_lib_dir))
-        local("find {} -type f -name perllocal.pod -delete".format(env.perl_release_lib_dir))
-        local("find {} -type d -empty -delete".format(env.perl_release_lib_dir))
+            # get rid of cruft that isn't useful to us
+            local("find {} -type f -name .packlist -delete".format(env.perl_release_lib_dir))
+            local("find {} -type f -name perllocal.pod -delete".format(env.perl_release_lib_dir))
+            local("find {} -type d -empty -delete".format(env.perl_release_lib_dir))
 
 
 class PerlTestTask(pushlib.TestTask):

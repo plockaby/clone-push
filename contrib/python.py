@@ -43,9 +43,8 @@ class PythonBuildTask(pushlib.BuildTask):
         super(PythonBuildTask, self).after()
 
         # build the project using python's build system.
-        if (os.path.isfile("{}/setup.py".format(env.build_dir))):
-            with lcd(env.build_dir):
-                self.build()
+        with lcd(env.build_dir):
+            self.build()
 
         # we are NOT copying bin or lib because python handles those for us.
         # but we do still care about these other ones.
@@ -92,11 +91,12 @@ class PythonBuildTask(pushlib.BuildTask):
                         release_bin_directory=env.python_release_bin_dir,
                     )
 
-        # build the project using python's build system
-        local("{} setup.py install {}".format(env.python, layout))
+        if (os.path.isfile("{}/setup.py".format(env.build_dir))):
+            # build the project using python's build system
+            local("{} setup.py install {}".format(env.python, layout))
 
-        # get rid of cruft that isn't useful to us
-        local("find {}/{} -type f -name \"*.egg-info\" -delete".format(env.python_release_dir, env.python_release_lib_dir))
+            # get rid of cruft that isn't useful to us
+            local("find {}/{} -type f -name \"*.egg-info\" -delete".format(env.python_release_dir, env.python_release_lib_dir))
 
 
 class PythonTestTask(pushlib.TestTask):
