@@ -2,25 +2,38 @@
 
 import os
 import pushlib
-from fabric.api import env, execute, local, hide, lcd
+from fabric.api import env, execute, local, hide, lcd, settings, path, shell_env
 from fabric.colors import yellow
 
 
-# load some defaults
-with hide('running'):
-    env.python = local("which python", capture=True)
-    env.python_nose = local("which nosetests", capture=True)
-    env.python_pep8 = local("which pep8", capture=True)
-    env.python_cover_dir = "{}/cover_db".format(env.test_dir)
+# load some defaults. these are set here so that they may be overridden by
+# other parts of the system if necessary.
+def load_defaults():
+    with hide('running'):
+        env.python = local("which python", capture=True).strip()
 
-    env.python_release_dir = env.release_dir
-    env.python_release_lib_dir = "lib/python"
-    env.python_release_bin_dir = "bin"
+        # it's ok if we don't find these
+        with settings(hide('warnings'), warn_only=True):
+            env.python_virtualenv = local("which virtualenv", capture=True).strip()
+            env.python_pip = local("which pip", capture=True).strip()
+            env.python_pep8 = local("which pep8", capture=True).strip()
+            env.python_nose = local("which nosetests", capture=True).strip()
+            env.python_coverage = local("which coverage", capture=True).strip()
+            env.python_coverage_dir = "{}/cover_db".format(env.test_dir)
+
+        # these are settings that define where built stuff gets put
+        env.python_release_dir = env.release_dir
+        env.python_release_lib_dir = "lib/python"
+        env.python_release_bin_dir = "bin"
+        env.python_virtualenv_root_dir = "{}/sbin/venv".format(env.release_dir)
 
 
 class PythonCleanTask(pushlib.CleanTask):
     __doc__ = pushlib.CleanTask.__doc__
 
+
+class PythonMostlyCleanTask(pushlib.MostlyCleanTask):
+    __doc__ = pushlib.MostlyCleanTask.__doc__
 
 
 class PythonBuildTask(pushlib.BuildTask):
@@ -29,6 +42,46 @@ class PythonBuildTask(pushlib.BuildTask):
     def after(self):
         super(PythonBuildTask, self).after()
 
+        # build the project using python's build system.
+        if (os.path.isfile("{}/setup.py".format(env.build_dir))):
+            with lcd(env.build_dir):
+                self.build()
+
+        # we are NOT copying bin or lib because python handles those for us.
+        # but we do still care about these other ones.
+        for path in ['etc', 'web', 'www']:
+            execute(pushlib.CopyDirectoryTask(), path)
+
+    def build(self):
+        # if we're running a virtualenv the we need to reload the defaults
+        virtualenv_name = env.get("virtualenv", None)
+        if (virtualenv_name is not None):
+            # make a place for the virtualenv to exist
+            local("mkdir -p {}".format(env.python_virtualenv_root_dir))
+
+            # create the virtualenv
+            with lcd(env.python_virtualenv_root_dir):
+                local("{} {}".format(env.python_virtualenv, virtualenv_name))
+                local("{} --relocatable {}".format(env.python_virtualenv, virtualenv_name))
+
+            with settings(path("{}/{}/bin".format(env.python_virtualenv_root_dir, virtualenv_name), behavior="prepend"),
+                          shell_env(VIRTUAL_ENV="{}/{}".format(env.python_virtualenv_root_dir, virtualenv_name))):
+                # re-load the default paths to make it uses the virtualenv python
+                load_defaults()
+
+                # load requirements into virtualenv
+                if (os.path.isfile("{}/requirements.txt".format(env.build_dir))):
+                    local("{} install -r {}/requirements.txt".format(env.python_pip, env.build_dir))
+
+                # really build
+                self._build()
+        else:
+            # really build
+            self._build()
+
+
+    def _build(self):
+        # this is defined in here to allow it to change based on any changes to env
         layout = """--root={release_directory} \
                     --install-purelib={release_lib_directory} \
                     --install-platlib={release_lib_directory} \
@@ -40,13 +93,10 @@ class PythonBuildTask(pushlib.BuildTask):
                     )
 
         # build the project using python's build system
-        if (os.path.isfile("{}/setup.py".format(env.build_dir))):
-            with lcd(env.build_dir):
-                local("{} setup.py install {}".format(env.python, layout))
-                local("find {}/{} -type f -name \"*.egg-info\" -delete".format(env.python_release_dir, env.python_release_lib_dir))
+        local("{} setup.py install {}".format(env.python, layout))
 
-        for path in ['etc', 'web', 'www']:
-            execute(pushlib.CopyDirectoryTask(), path)
+        # get rid of cruft that isn't useful to us
+        local("find {}/{} -type f -name \"*.egg-info\" -delete".format(env.python_release_dir, env.python_release_lib_dir))
 
 
 class PythonTestTask(pushlib.TestTask):
@@ -56,18 +106,42 @@ class PythonTestTask(pushlib.TestTask):
         super(PythonTestTask, self).after()
 
         # run python tests
-        if ("skip_tests" not in env or (str(env.skip_tests) != "True" and str(env.skip_tests) != "1")):
-            # run unit tests first
+        if (str(env.get("skip_tests", False)) not in ["True", "1"]):
             with lcd(env.build_dir):
-                local("{} --with-xunit --xunit-file={}/nosetests.xml --no-byte-compile --exe --all-modules --traverse-namespace --with-coverage --cover-inclusive --cover-branches --cover-html --cover-html-dir={} --cover-xml-file={}/coverage.xml".format(env.python_nose, env.test_dir, env.python_cover_dir, env.python_cover_dir))
+                self.test()
+        else:
+            print(yellow("Not tests because 'skip_tests' is set."))
 
+    def test(self):
+        # if we're running a virtualenv the we need to reload the defaults
+        virtualenv_name = env.get("virtualenv", None)
+        if (virtualenv_name is not None):
+            with settings(path("{}/{}/bin".format(env.python_virtualenv_root_dir, virtualenv_name), behavior="prepend"),
+                          shell_env(VIRTUAL_ENV="{}/{}".format(env.python_virtualenv_root_dir, virtualenv_name))):
+                # re-load the default paths to make it uses the virtualenv python
+                load_defaults()
+
+                # really test
+                self._test()
+        else:
+            # really test
+            self._test()
+
+    def _test(self):
+        if (env.get("python_nose", "") != ""):
+            if (env.get("python_coverage", "") != ""):
+                local("{} --with-xunit --xunit-file={}/nosetests.xml --no-byte-compile --exe --all-modules --traverse-namespace --with-coverage --cover-inclusive --cover-branches --cover-html --cover-html-dir={} --cover-xml-file={}/coverage.xml".format(env.python_nose, env.test_dir, env.python_coverage_dir, env.python_coverage_dir))
+            else:
+                local("{} --with-xunit --xunit-file={}/nosetests.xml --no-byte-compile --exe --all-modules --traverse-namespace".format(env.python_nose, env.test_dir))
+
+        if (env.get("python_pep8", "") != ""):
             pep8linted = "{}/.pep8linted".format(env.test_dir)
-
             if (not os.path.exists(pep8linted)):
                 local("touch -m -t 200001010000 {}".format(pep8linted))
 
-            python_files = local("find {} -newer {} -type f -name \"*.py\"".format(env.build_dir, pep8linted), capture=True)
-            python_bin_files = local("find {} -newer {} -type f -not -name .pushrc -exec awk '/^#!.*python/{{print FILENAME}} {{nextfile}}' {{}} +".format(env.build_dir, pep8linted), capture=True)
+            # find python files modified since we last ran pep8
+            python_files = local("find {} -type f -newer {} -name \"*.py\"".format(env.build_dir, pep8linted), capture=True).strip()
+            python_bin_files = local("find {} -type f -newer {} -not -name .pushrc -exec awk '/^#!.*python/{{print FILENAME}} {{nextfile}}' {{}} +".format(env.build_dir, pep8linted), capture=True).strip()
 
             if (python_files):
                 for file in python_files.split("\n"):
@@ -78,8 +152,6 @@ class PythonTestTask(pushlib.TestTask):
                     local("{} {} --ignore=E501,E221,E241".format(env.python_pep8, file))
 
             local("touch {}".format(pep8linted))
-        else:
-            print(yellow("Not running tests because 'skip_tests' is set."))
 
 
 class PythonArchiveTask(pushlib.ArchiveTask):
@@ -104,11 +176,18 @@ class CopyDirectoryTask(pushlib.CopyDirectoryTask):
     pass
 
 
-# all of these extra classes are defined so that they may be inherited
-cleanTask   = PythonCleanTask()
-buildTask   = PythonBuildTask()
-testTask    = PythonTestTask()
-archiveTask = PythonArchiveTask()
-liveTask    = PythonLiveTask()
-cloneTask   = PythonCloneTask()
-deployTask  = PythonDeployTask()
+# being passed along so it gets imported into .pushrc
+# not exported to fabric and not an executable task
+class CleanUpTask(pushlib.CleanUpTask):
+    pass
+
+
+load_defaults()
+cleanTask       = PythonCleanTask()
+mostlyCleanTask = PythonMostlyCleanTask()
+buildTask       = PythonBuildTask()
+testTask        = PythonTestTask()
+archiveTask     = PythonArchiveTask()
+liveTask        = PythonLiveTask()
+cloneTask       = PythonCloneTask()
+deployTask      = PythonDeployTask()
