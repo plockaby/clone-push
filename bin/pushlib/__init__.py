@@ -61,11 +61,6 @@ env.project_name = os.path.basename(os.path.normpath(os.getcwd()))
 env.repo_version = "{}{}".format(env.repo_commit_name, ("-dirty" if env.repo_is_dirty else ""))
 env.archive_name = "{}-version-{}.tar.gz".format(env.project_name, env.repo_version)
 
-# flags for tar and rsync
-env.tar_c_flags = "-p"
-env.tar_x_flags = "-p --no-same-owner --overwrite-dir"
-env.rsync_flags = "-aH --numeric-ids --exclude=.git --exclude=.gitignore --exclude={git_root}/.gitignore --exclude-from=.gitignore --exclude-from={git_root}/.gitignore".format(git_root=env.git_root_dir)
-
 
 class CleanTask(Task):
     """
@@ -215,7 +210,7 @@ class ArchiveTask(Task):
 
         # create the archive
         local("mkdir -p {}".format(env.archive_dir))
-        local("{tar} -czf {archive_directory}/{archive_name} -C {release_directory} {flags} .".format(tar=env.tar, archive_directory=env.archive_dir, archive_name=env.archive_name, release_directory=env.release_dir, flags=env.tar_c_flags))
+        local("{} -czf {}/{} -C {} -p .".format(env.tar, env.archive_dir, env.archive_name, env.release_dir))
 
         # call after hooks
         self.after()
@@ -277,11 +272,11 @@ class LiveTask(Task):
         # don't do it in parallel, sometimes the plugin modules have prompts.
         with settings(hosts=hosts):
             execute("deploy",
-                archive_file="{}/{}".format(env.archive_dir, env.archive_name),
-                remote_user=env.host_user,
-                remote_path=env.host_path,
-                check_for_tag=False,
-            )
+                    archive_file="{}/{}".format(env.archive_dir, env.archive_name),
+                    remote_user=env.host_user,
+                    remote_path=env.host_path,
+                    check_for_tag=False,
+                    )
 
         # call after hooks
         self.after()
@@ -329,11 +324,11 @@ class CloneTask(Task):
 
         with settings(hosts=hosts):
             execute("deploy",
-                archive_file="{}/{}".format(env.archive_dir, env.archive_name),
-                remote_user=env.host_user,
-                remote_path="{}/{}{}".format(env.clone_base_dir, env.clone_path, env.host_path),
-                check_for_tag=True,
-            )
+                    archive_file="{}/{}".format(env.archive_dir, env.archive_name),
+                    remote_user=env.host_user,
+                    remote_path="{}/{}{}".format(env.clone_base_dir, env.clone_path, env.host_path),
+                    check_for_tag=True,
+                    )
 
         # call after hooks
         self.after()
@@ -402,8 +397,8 @@ class DeployTask(Task):
         remote_archive_file = "/tmp/{}".format(os.path.basename(archive_file))
 
         put(archive_file, remote_archive_file)
-        sudo("mkdir -p {prefix}".format(prefix=remote_path), user=remote_user)
-        sudo("{tar} zxf {archive} -C {prefix} {flags}".format(tar=env.tar, archive=remote_archive_file, prefix=remote_path, flags=env.tar_x_flags), user=remote_user)
+        sudo("mkdir -p {}".format(remote_path), user=remote_user)
+        sudo("{} zxf {} -C {} -p --no-same-owner --overwrite-dir".format(env.tar, remote_archive_file, remote_path), user=remote_user)
         run("rm -f {}".format(remote_archive_file))
 
         # call after hooks
@@ -440,4 +435,4 @@ class CopyDirectoryTask(Task):
 
         if (os.path.isdir(source)):
             local("mkdir -p {}".format(destination))
-            local("{rsync} {flags} {source} {destination}".format(rsync=env.rsync, flags=env.rsync_flags, source=source, destination=destination))
+            local("{} -ah --numeric-ids --exclude=.git --exclude=.gitignore --exclude={}/.gitignore --exclude-from=.gitignore --exclude-from={}/.gitignore {} {}".format(env.rsync, env.git_root_dir, env.git_root_dir, source, destination))

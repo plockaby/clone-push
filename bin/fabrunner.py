@@ -7,6 +7,7 @@ warnings.filterwarnings("ignore")
 warnings.simplefilter("ignore", PowmInsecureWarning)
 
 # run Fabric like normal
-import sys
-from fabric.main import main
-sys.exit(main())
+if __name__ == '__main__':
+    import sys
+    from fabric.main import main
+    sys.exit(main())
