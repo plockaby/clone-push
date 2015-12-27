@@ -10,15 +10,15 @@ from fabric.colors import yellow
 # other parts of the system if necessary.
 def load_defaults():
     with hide('running'):
-        env.python = local("which python", capture=True).strip()
+        env.python = local("{} python".format(env.tools['which']), capture=True).strip()
 
         # it's ok if we don't find these
         with settings(hide('warnings'), warn_only=True):
-            env.python_virtualenv = local("which virtualenv", capture=True).strip()
-            env.python_pip = local("which pip", capture=True).strip()
-            env.python_pep8 = local("which pep8", capture=True).strip()
-            env.python_nose = local("which nosetests", capture=True).strip()
-            env.python_coverage = local("which coverage", capture=True).strip()
+            env.python_virtualenv = local("{} virtualenv".format(env.tools['which']), capture=True).strip()
+            env.python_pip = local("{} pip".format(env.tools['which']), capture=True).strip()
+            env.python_pep8 = local("{} pep8".format(env.tools['which']), capture=True).strip()
+            env.python_nose = local("{} nosetests".format(env.tools['which']), capture=True).strip()
+            env.python_coverage = local("{} coverage".format(env.tools['which']), capture=True).strip()
             env.python_coverage_dir = "{}/cover_db".format(env.test_dir)
 
         # these are settings that define where built stuff gets put
@@ -56,14 +56,14 @@ class PythonBuildTask(pushlib.BuildTask):
         virtualenv_name = env.get("virtualenv", None)
         if (virtualenv_name is not None):
             # make a place for the virtualenv to exist
-            local("mkdir -p {}".format(env.python_virtualenv_root_dir))
+            local("{} -p {}".format(env.tools['mkdir'], env.python_virtualenv_root_dir))
 
             # create the virtualenv
             with lcd(env.python_virtualenv_root_dir):
                 local("{} {}".format(env.python_virtualenv, virtualenv_name))
                 local("{} --relocatable {}".format(env.python_virtualenv, virtualenv_name))
 
-            with settings(path("{}/{}/bin".format(env.python_virtualenv_root_dir, virtualenv_name), behavior="prepend"),
+            with settings(path("{}/{}/bin".format(env.python_virtualenv_root_dir, virtualenv_name), behavior="replace"),
                           shell_env(VIRTUAL_ENV="{}/{}".format(env.python_virtualenv_root_dir, virtualenv_name))):
                 # re-load the default paths to make it uses the virtualenv python
                 load_defaults()
@@ -96,7 +96,7 @@ class PythonBuildTask(pushlib.BuildTask):
             local("{} setup.py install {}".format(env.python, layout))
 
             # get rid of cruft that isn't useful to us
-            local("find {}/{} -type f -name \"*.egg-info\" -delete".format(env.python_release_dir, env.python_release_lib_dir))
+            local("{} {}/{} -type f -name \"*.egg-info\" -delete".format(env.tools['find'], env.python_release_dir, env.python_release_lib_dir))
 
 
 class PythonTestTask(pushlib.TestTask):
@@ -116,7 +116,7 @@ class PythonTestTask(pushlib.TestTask):
         # if we're running a virtualenv the we need to reload the defaults
         virtualenv_name = env.get("virtualenv", None)
         if (virtualenv_name is not None):
-            with settings(path("{}/{}/bin".format(env.python_virtualenv_root_dir, virtualenv_name), behavior="prepend"),
+            with settings(path("{}/{}/bin".format(env.python_virtualenv_root_dir, virtualenv_name), behavior="replace"),
                           shell_env(VIRTUAL_ENV="{}/{}".format(env.python_virtualenv_root_dir, virtualenv_name))):
                 # re-load the default paths to make it uses the virtualenv python
                 load_defaults()
@@ -137,11 +137,11 @@ class PythonTestTask(pushlib.TestTask):
         if (env.get("python_pep8", "") != ""):
             pep8linted = "{}/.pep8linted".format(env.test_dir)
             if (not os.path.exists(pep8linted)):
-                local("touch -m -t 200001010000 {}".format(pep8linted))
+                local("{} -m -t 200001010000 {}".format(env.tools['touch'], pep8linted))
 
             # find python files modified since we last ran pep8
-            python_files = local("find {} -type f -newer {} -name \"*.py\"".format(env.build_dir, pep8linted), capture=True).strip()
-            python_bin_files = local("find {} -type f -newer {} -not -name .pushrc -exec awk '/^#!.*python/{{print FILENAME}} {{nextfile}}' {{}} +".format(env.build_dir, pep8linted), capture=True).strip()
+            python_files = local("{} {} -type f -newer {} -name \"*.py\"".format(env.tools['find'], env.build_dir, pep8linted), capture=True).strip()
+            python_bin_files = local("{} {} -type f -newer {} -not -name .pushrc -exec {} '/^#!.*python/{{print FILENAME}} {{nextfile}}' {{}} +".format(env.tools['find'], env.build_dir, pep8linted, env.tools['awk']), capture=True).strip()
 
             if (python_files):
                 for file in python_files.split("\n"):
@@ -151,7 +151,7 @@ class PythonTestTask(pushlib.TestTask):
                 for file in python_bin_files.split("\n"):
                     local("{} {} --ignore=E501,E221,E241".format(env.python_pep8, file))
 
-            local("touch {}".format(pep8linted))
+            local("{} {}".format(env.tools['touch'], pep8linted))
 
 
 class PythonArchiveTask(pushlib.ArchiveTask):

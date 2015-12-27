@@ -10,13 +10,13 @@ from fabric.colors import yellow
 # other parts of the system if necessary.
 def load_defaults():
     with hide('running'):
-        env.perl = local("which perl", capture=True).strip()
+        env.perl = local("{} perl".format(env.tools['which']), capture=True).strip()
 
         # it's ok if we don't find these
         with settings(hide('warnings'), warn_only=True):
-            env.perl_prove = local("which prove", capture=True).strip()
+            env.perl_prove = local("{} prove".format(env.tools['which']), capture=True).strip()
             env.perl_prove_dir = "{}/prove_db".format(env.test_dir)
-            env.perl_cover = local("which cover", capture=True).strip()
+            env.perl_cover = local("{} cover".format(env.tools['which']), capture=True).strip()
             env.perl_cover_dir = "{}/cover_db".format(env.test_dir)
 
         # these are settings that define where built stuff gets put
@@ -73,12 +73,12 @@ class PerlBuildTask(pushlib.BuildTask):
 
         if (os.path.isfile("{}/Makefile.PL".format(env.build_dir))):
             local("{} Makefile.PL {}".format(env.perl, layout))
-            local("make install")
+            local("{} install".format(env.tools['make']))
 
             # get rid of cruft that isn't useful to us
-            local("find {} -type f -name .packlist -delete".format(env.perl_release_lib_dir))
-            local("find {} -type f -name perllocal.pod -delete".format(env.perl_release_lib_dir))
-            local("find {} -type d -empty -delete".format(env.perl_release_lib_dir))
+            local("{} {} -type f -name .packlist -delete".format(env.tools['find'], env.perl_release_lib_dir))
+            local("{} {} -type f -name perllocal.pod -delete".format(env.tools['find'], env.perl_release_lib_dir))
+            local("{} {} -type d -empty -delete".format(env.tools['find'], env.perl_release_lib_dir))
 
 
 class PerlTestTask(pushlib.TestTask):

@@ -24,6 +24,18 @@ env.host_user = "wwwdata"
 # define paths to tools. by using "hide" we avoid showing that we are running
 # these commands because nobody cares.
 with hide('running'):
-    env.git = local("which git", capture=True)
-    env.tar = local("which tar", capture=True)
-    env.rsync = local("which rsync", capture=True)
+    env.tools = {}
+    env.tools['ls']    = local("which ls", capture=True).strip()
+    env.tools['ln']    = local("which ln", capture=True).strip()
+    env.tools['mv']    = local("which mv", capture=True).strip()
+    env.tools['rm']    = local("which rm", capture=True).strip()
+    env.tools['mkdir'] = local("which mkdir", capture=True).strip()
+    env.tools['git']   = local("which git", capture=True).strip()
+    env.tools['make']  = local("which make", capture=True).strip()
+    env.tools['rsync'] = local("which rsync", capture=True).strip()
+    env.tools['tar']   = local("which tar", capture=True).strip()
+    env.tools['find']  = local("which find", capture=True).strip()
+    env.tools['which'] = local("which which", capture=True).strip()
+    env.tools['make']  = local("which make", capture=True).strip()
+    env.tools['touch'] = local("which touch", capture=True).strip()
+    env.tools['awk']   = local("which awk", capture=True).strip()

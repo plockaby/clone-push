@@ -30,25 +30,25 @@ env.completed_tasks = {}
 
 # the path to the root of the git repository
 with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
-    env.git_root_dir = local("{} rev-parse --show-toplevel".format(env.git), capture=True)
+    env.git_root_dir = local("{} rev-parse --show-toplevel".format(env.tools['git']), capture=True)
 
 # get the latest commit/tag and branch of the repo or HEAD if no commit/tag and/or branch
 with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
-    if (int(local("ls {}/.git/refs/heads/ | wc -l | tr -d ' '".format(env.git_root_dir), capture=True)) != 0):
-        env.repo_commit_name = local("{} describe --always --tags".format(env.git), capture=True).strip()
-        env.repo_branch_name = local("{} rev-parse --abbrev-ref HEAD".format(env.git), capture=True).strip()
-        env.repo_tag_name = local("{} describe --tags --exact-match".format(env.git), capture=True).strip()
+    if (int(local("{} {}/.git/refs/heads/ | wc -l | tr -d ' '".format(env.tools['ls'], env.git_root_dir), capture=True)) != 0):
+        env.repo_commit_name = local("{} describe --always --tags".format(env.tools['git']), capture=True).strip()
+        env.repo_branch_name = local("{} rev-parse --abbrev-ref HEAD".format(env.tools['git']), capture=True).strip()
+        env.repo_tag_name = local("{} describe --tags --exact-match".format(env.tools['git']), capture=True).strip()
 
-    if ("repo_commit_name" not in env or env.repo_commit_name is None or env.repo_commit_name == ""):
+    if (env.get("repo_commit_name", "") == ""):
         env.repo_commit_name = "HEAD"
-    if ("repo_branch_name" not in env or env.repo_branch_name is None or env.repo_commit_name == ""):
+    if (env.get("repo_branch_name", "") == ""):
         env.repo_branch_name = "HEAD"
-    if ("repo_tag_name" not in env or env.repo_tag_name is None or env.repo_tag_name == ""):
+    if (env.get("repo_tag_name", "") == ""):
         env.repo_tag_name = None
 
 # is set to "true" if the repository is dirty
 with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
-    if (str(local("{} status -s".format(env.git), capture=True)) != ""):
+    if (str(local("{} status -s".format(env.tools['git']), capture=True)) != ""):
         env.repo_is_dirty = True
     else:
         env.repo_is_dirty = False
@@ -73,11 +73,8 @@ class CleanTask(Task):
         # clean absolutely everything, including the list of tasks that have been run
         env.completed_tasks = {}
 
-        local("rm -rf {}".format(env.containment_dir))
+        local("{} -rf {}".format(env.tools['rm'], env.containment_dir))
         print(green("Finished cleaning project."))
-
-        # record that we've run this step
-        env.completed_tasks[self.__class__.__name__] = True
 
 
 class MostlyCleanTask(Task):
@@ -91,14 +88,11 @@ class MostlyCleanTask(Task):
         # clean absolutely everything, including the list of tasks that have been run
         env.completed_tasks = {}
 
-        local("rm -rf {}".format(env.build_dir))
-        local("rm -rf {}".format(env.archive_dir))
-        local("rm -rf {}".format(env.release_dir))
-        local("rm -rf {}".format(env.temp_dir))
+        local("{} -rf {}".format(env.tools['rm'], env.build_dir))
+        local("{} -rf {}".format(env.tools['rm'], env.archive_dir))
+        local("{} -rf {}".format(env.tools['rm'], env.release_dir))
+        local("{} -rf {}".format(env.tools['rm'], env.temp_dir))
         print(green("Finished cleaning project."))
-
-        # record that we've run this step
-        env.completed_tasks[self.__class__.__name__] = True
 
 
 class BuildTask(Task):
@@ -116,7 +110,7 @@ class BuildTask(Task):
 
     def run(self):
         # don't run this class more than once
-        if (self.__class__.__name__ in env.completed_tasks and env.completed_tasks[self.__class__.__name__]):
+        if (env.completed_tasks.get(self.__class__.__name__, False)):
             return
 
         # run prereqs
@@ -126,13 +120,11 @@ class BuildTask(Task):
         self.before()
 
         # create release directories, build directory gets created by rsync
-        local("rm -rf {}".format(env.release_dir))
-        local("mkdir -p {}".format(env.release_dir))
+        local("{} -p {}".format(env.tools['mkdir'], env.release_dir))
 
         # copy the root directory into the .push/build directory. need to
         # append the trailing slash to make rsync copy the contents of the
         # current directory rather than the current directory itself.
-        local("rm -rf {}".format(env.build_dir))
         execute(CopyDirectoryTask(), "{}/".format(env.current_dir), env.build_dir)
 
         # call after hooks
@@ -159,7 +151,7 @@ class TestTask(Task):
 
     def run(self):
         # don't run this class more than once
-        if (self.__class__.__name__ in env.completed_tasks and env.completed_tasks[self.__class__.__name__]):
+        if (env.completed_tasks.get(self.__class__.__name__, False)):
             return
 
         # run prereqs
@@ -169,7 +161,7 @@ class TestTask(Task):
         self.before()
 
         # no tests by default
-        local("mkdir -p {}".format(env.test_dir))
+        local("{} -p {}".format(env.tools['mkdir'], env.test_dir))
 
         # call after hooks
         self.after()
@@ -195,7 +187,7 @@ class ArchiveTask(Task):
 
     def run(self):
         # don't run this class more than once
-        if (self.__class__.__name__ in env.completed_tasks and env.completed_tasks[self.__class__.__name__]):
+        if (env.completed_tasks.get(self.__class__.__name__, False)):
             return
 
         # run prereqs
@@ -209,8 +201,8 @@ class ArchiveTask(Task):
             abort("No release directory found. Cannot create archive.")
 
         # create the archive
-        local("mkdir -p {}".format(env.archive_dir))
-        local("{} -czf {}/{} -C {} -p .".format(env.tar, env.archive_dir, env.archive_name, env.release_dir))
+        local("{} -p {}".format(env.tools['mkdir'], env.archive_dir))
+        local("{} -czf {}/{} -C {} -p .".format(env.tools['tar'], env.archive_dir, env.archive_name, env.release_dir))
 
         # call after hooks
         self.after()
@@ -375,7 +367,7 @@ class DeployTask(Task):
         if (not os.path.isfile("{}/{}".format(env.archive_dir, env.archive_name))):
             abort("No archive file found. Cannot distribute project.")
 
-        if ("no_tag" not in env or (str(env.no_tag) != "True" and str(env.no_tag) != "1")):
+        if (str(env.get("no_tag", False)) not in ["True", "1"]):
             if (check_for_tag):
                 if (env.repo_is_dirty and not confirm(red("Repository is dirty and thus not tagged. Deploy anyway?"))):
                     abort("Aborting at user request.")
@@ -396,10 +388,15 @@ class DeployTask(Task):
         # we're going to put it into /tmp
         remote_archive_file = "/tmp/{}".format(os.path.basename(archive_file))
 
+        # figure out where things are on the remote host
+        remote_rm = run("which rm", quiet=True).strip()
+        remote_mkdir = run("which mkdir", quiet=True).strip()
+        remote_tar = run("which tar", quiet=True).strip()
+
         put(archive_file, remote_archive_file)
-        sudo("mkdir -p {}".format(remote_path), user=remote_user)
-        sudo("{} zxf {} -C {} -p --no-same-owner --overwrite-dir".format(env.tar, remote_archive_file, remote_path), user=remote_user)
-        run("rm -f {}".format(remote_archive_file))
+        sudo("{} -p {}".format(remote_mkdir, remote_path), user=remote_user)
+        sudo("{} zxf {} -C {} -p --no-same-owner --overwrite-dir".format(remote_tar, remote_archive_file, remote_path), user=remote_user)
+        run("{} -f {}".format(remote_rm, remote_archive_file))
 
         # call after hooks
         self.after(**kwargs)
@@ -418,7 +415,11 @@ class CleanUpTask(Task):
 
         if (go_forth is True):
             print(cyan("Removing {} from {}.".format(remote_path, env.host_string)))
-            sudo("rm -rf {}".format(remote_path), user=remote_user)
+
+            # figure out where things are on the remote host
+            remote_rm = run("which rm", quiet=True).strip()
+
+            sudo("{} -rf {}".format(remote_rm, remote_path), user=remote_user)
 
 
 class CopyDirectoryTask(Task):
@@ -434,5 +435,5 @@ class CopyDirectoryTask(Task):
             destination = "{}/{}".format(env.release_dir, destination)
 
         if (os.path.isdir(source)):
-            local("mkdir -p {}".format(destination))
-            local("{} -ah --numeric-ids --exclude=.git --exclude=.gitignore --exclude={}/.gitignore --exclude-from=.gitignore --exclude-from={}/.gitignore {} {}".format(env.rsync, env.git_root_dir, env.git_root_dir, source, destination))
+            local("{} -p {}".format(env.tools['mkdir'], destination))
+            local("{} -ah --numeric-ids --exclude=.git --exclude=.gitignore --exclude={}/.gitignore --exclude-from=.gitignore --exclude-from={}/.gitignore {} {}".format(env.tools['rsync'], env.git_root_dir, env.git_root_dir, source, destination))
