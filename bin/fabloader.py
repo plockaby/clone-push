@@ -2,7 +2,6 @@
 
 import os
 import config
-from fabric.api import abort
 
 # try to import the servers list but it's ok if we can't
 try:

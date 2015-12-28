@@ -10,15 +10,15 @@ from fabric.colors import yellow
 # other parts of the system if necessary.
 def load_defaults():
     with hide('running'):
-        env.python = local("{} python".format(env.tools['which']), capture=True).strip()
+        env.python = local("{} python".format(env.tools['which']), capture=True)
 
         # it's ok if we don't find these
         with settings(hide('warnings'), warn_only=True):
-            env.python_virtualenv = local("{} virtualenv".format(env.tools['which']), capture=True).strip()
-            env.python_pip = local("{} pip".format(env.tools['which']), capture=True).strip()
-            env.python_pep8 = local("{} pep8".format(env.tools['which']), capture=True).strip()
-            env.python_nose = local("{} nosetests".format(env.tools['which']), capture=True).strip()
-            env.python_coverage = local("{} coverage".format(env.tools['which']), capture=True).strip()
+            env.python_virtualenv = local("{} virtualenv".format(env.tools['which']), capture=True)
+            env.python_pip = local("{} pip".format(env.tools['which']), capture=True)
+            env.python_pep8 = local("{} pep8".format(env.tools['which']), capture=True)
+            env.python_nose = local("{} nosetests".format(env.tools['which']), capture=True)
+            env.python_coverage = local("{} coverage".format(env.tools['which']), capture=True)
             env.python_coverage_dir = "{}/cover_db".format(env.test_dir)
 
         # these are settings that define where built stuff gets put
@@ -140,8 +140,8 @@ class PythonTestTask(pushlib.TestTask):
                 local("{} -m -t 200001010000 {}".format(env.tools['touch'], pep8linted))
 
             # find python files modified since we last ran pep8
-            python_files = local("{} {} -type f -newer {} -name \"*.py\"".format(env.tools['find'], env.build_dir, pep8linted), capture=True).strip()
-            python_bin_files = local("{} {} -type f -newer {} -not -name .pushrc -exec {} '/^#!.*python/{{print FILENAME}} {{nextfile}}' {{}} +".format(env.tools['find'], env.build_dir, pep8linted, env.tools['awk']), capture=True).strip()
+            python_files = local("{} {} -type f -newer {} -name \"*.py\"".format(env.tools['find'], env.build_dir, pep8linted), capture=True)
+            python_bin_files = local("{} {} -type f -newer {} -not -name .pushrc -exec {} '/^#!.*python/{{print FILENAME}} {{nextfile}}' {{}} +".format(env.tools['find'], env.build_dir, pep8linted, env.tools['awk']), capture=True)
 
             if (python_files):
                 for file in python_files.split("\n"):

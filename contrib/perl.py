@@ -10,13 +10,13 @@ from fabric.colors import yellow
 # other parts of the system if necessary.
 def load_defaults():
     with hide('running'):
-        env.perl = local("{} perl".format(env.tools['which']), capture=True).strip()
+        env.perl = local("{} perl".format(env.tools['which']), capture=True)
 
         # it's ok if we don't find these
         with settings(hide('warnings'), warn_only=True):
-            env.perl_prove = local("{} prove".format(env.tools['which']), capture=True).strip()
+            env.perl_prove = local("{} prove".format(env.tools['which']), capture=True)
             env.perl_prove_dir = "{}/prove_db".format(env.test_dir)
-            env.perl_cover = local("{} cover".format(env.tools['which']), capture=True).strip()
+            env.perl_cover = local("{} cover".format(env.tools['which']), capture=True)
             env.perl_cover_dir = "{}/cover_db".format(env.test_dir)
 
         # these are settings that define where built stuff gets put

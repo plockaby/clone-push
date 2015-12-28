@@ -35,9 +35,9 @@ with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
 # get the latest commit/tag and branch of the repo or HEAD if no commit/tag and/or branch
 with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
     if (int(local("{} {}/.git/refs/heads/ | wc -l | tr -d ' '".format(env.tools['ls'], env.git_root_dir), capture=True)) != 0):
-        env.repo_commit_name = local("{} describe --always --tags".format(env.tools['git']), capture=True).strip()
-        env.repo_branch_name = local("{} rev-parse --abbrev-ref HEAD".format(env.tools['git']), capture=True).strip()
-        env.repo_tag_name = local("{} describe --tags --exact-match".format(env.tools['git']), capture=True).strip()
+        env.repo_commit_name = local("{} describe --always --tags".format(env.tools['git']), capture=True)
+        env.repo_branch_name = local("{} rev-parse --abbrev-ref HEAD".format(env.tools['git']), capture=True)
+        env.repo_tag_name = local("{} describe --tags --exact-match".format(env.tools['git']), capture=True)
 
     if (env.get("repo_commit_name", "") == ""):
         env.repo_commit_name = "HEAD"
@@ -389,9 +389,9 @@ class DeployTask(Task):
         remote_archive_file = "/tmp/{}".format(os.path.basename(archive_file))
 
         # figure out where things are on the remote host
-        remote_rm = run("which rm", quiet=True).strip()
-        remote_mkdir = run("which mkdir", quiet=True).strip()
-        remote_tar = run("which tar", quiet=True).strip()
+        remote_rm = run("which rm", quiet=True)
+        remote_mkdir = run("which mkdir", quiet=True)
+        remote_tar = run("which tar", quiet=True)
 
         put(archive_file, remote_archive_file)
         sudo("{} -p {}".format(remote_mkdir, remote_path), user=remote_user)
@@ -417,7 +417,7 @@ class CleanUpTask(Task):
             print(cyan("Removing {} from {}.".format(remote_path, env.host_string)))
 
             # figure out where things are on the remote host
-            remote_rm = run("which rm", quiet=True).strip()
+            remote_rm = run("which rm", quiet=True)
 
             sudo("{} -rf {}".format(remote_rm, remote_path), user=remote_user)
 
