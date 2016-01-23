@@ -25,7 +25,9 @@ env.archive_dir     = "{}/archive".format(env.containment_dir)
 env.release_dir     = "{}/release".format(env.containment_dir)
 env.temp_dir        = "{}/temp".format(env.containment_dir)
 
-# keep track of what tasks we have run so that we don't run them again
+# keep track of what tasks we have run so that we don't run them again. yes,
+# fabric has a "runs_once" option but we want to be able to reset it when we
+# call "clean" and this lets us do that.
 env.completed_tasks = {}
 
 # the path to the root of the git repository
@@ -255,20 +257,20 @@ class LiveTask(Task):
                     else:
                         hosts.append(env.servers[role])
                 else:
-                    warn("Ignoring \"{}\" because it is not in the configured list of servers.".format(role, role))
+                    warn("Ignoring \"{}\" because it is not in the configured list of servers.".format(role))
 
         # if we didn't find any hosts then explode
         if (len(hosts) == 0):
             abort("No hosts found for deployment")
 
         # don't do it in parallel, sometimes the plugin modules have prompts.
-        with settings(hosts=hosts):
-            execute("deploy",
-                    archive_file="{}/{}".format(env.archive_dir, env.archive_name),
-                    remote_user=env.host_user,
-                    remote_path=env.host_path,
-                    check_for_tag=False,
-                    )
+        for host in hosts:
+            with settings(hosts=host):
+                execute("deploy",
+                        archive_file="{}/{}".format(env.archive_dir, env.archive_name),
+                        remote_user=env.host_user,
+                        remote_path=env.host_path,
+                        )
 
         # call after hooks
         self.after()
@@ -296,31 +298,39 @@ class CloneTask(Task):
         # call before hooks
         self.before()
 
-        # these are all the hosts we're going to deploy to
-        hosts = []
+        if (str(env.get("no_tag", False)) not in ["True", "1"]):
+            if (env.repo_is_dirty and not confirm(red("Repository is dirty and thus not tagged. Deploy anyway?"))):
+                abort("Aborting at user request.")
+            if (env.repo_tag_name is None and not confirm(red("This revision is not tagged. Deploy anyway?"))):
+                abort("Aborting at user request.")
+                warn("This revision is not tagged.")
 
-        # add any hosts defined using the -H option
-        if (len(env.hosts) != 0):
-            hosts += env.hosts
+            if (not env.repo_is_dirty and env.repo_tag_name is not None):
+                print(green("Project is tagged at version {} and ready for release.".format(env.repo_tag_name)))
+            else:
+                if (env.repo_is_dirty):
+                    warn("Repository is dirty and thus not tagged.")
+                if (env.repo_tag_name is None):
+                    warn("This revision is not tagged.")
+        else:
+            print(yellow("Not checking to see if the project is tagged because 'no_tag' is set."))
 
         if ("servers" in env and "clone" in env.servers):
-            hosts.append(env.servers["clone"])
+            hosts = []
+            if (isinstance(env.servers["clone"], list)):
+                hosts += env.servers["clone"]
+            else:
+                hosts.append(env.servers["clone"])
+
+            for host in hosts:
+                with settings(hosts=host):
+                    execute("deploy",
+                            archive_file="{}/{}".format(env.archive_dir, env.archive_name),
+                            remote_user=env.host_user,
+                            remote_path="{}/{}{}".format(env.clone_base_dir, env.clone_path, env.host_path),
+                            )
         else:
-            # if there are no roles given then deploy to localhost but do it
-            # through our public interface.
-            hosts.append(socket.getfqdn())
-
-        # if we didn't find any hosts then explode
-        if (len(hosts) == 0):
-            abort("No hosts found for deployment")
-
-        with settings(hosts=hosts):
-            execute("deploy",
-                    archive_file="{}/{}".format(env.archive_dir, env.archive_name),
-                    remote_user=env.host_user,
-                    remote_path="{}/{}{}".format(env.clone_base_dir, env.clone_path, env.host_path),
-                    check_for_tag=True,
-                    )
+            abort("Could not find \"clone\" in configured list of servers.")
 
         # call after hooks
         self.after()
@@ -351,13 +361,11 @@ class DeployTask(Task):
         kwargs['archive_file'] = kwargs.get('archive_file', "{}/{}".format(env.archive_dir, env.archive_name))
         kwargs['remote_user'] = kwargs.get('remote_user', env.host_user)
         kwargs['remote_path'] = kwargs.get('remote_path', env.host_path)
-        kwargs['check_for_tag'] = kwargs.get('check_for_tag', False)
 
         # now get the values we're going to use
         archive_file = kwargs.get('archive_file')
         remote_user = kwargs.get('remote_user')
         remote_path = kwargs.get('remote_path')
-        check_for_tag = kwargs.get('check_for_tag')
 
         print(cyan("Deploying {} to {}:{} as user {}.".format(archive_file, env.host_string, remote_path, remote_user)))
 
@@ -366,24 +374,6 @@ class DeployTask(Task):
 
         if (not os.path.isfile("{}/{}".format(env.archive_dir, env.archive_name))):
             abort("No archive file found. Cannot distribute project.")
-
-        if (str(env.get("no_tag", False)) not in ["True", "1"]):
-            if (check_for_tag):
-                if (env.repo_is_dirty and not confirm(red("Repository is dirty and thus not tagged. Deploy anyway?"))):
-                    abort("Aborting at user request.")
-                if (env.repo_tag_name is None and not confirm(red("This revision is not tagged. Deploy anyway?"))):
-                    abort("Aborting at user request.")
-                    warn("This revision is not tagged.")
-
-            if (not env.repo_is_dirty and env.repo_tag_name is not None):
-                print(green("Project is tagged at version {} and ready for release.".format(env.repo_tag_name)))
-            else:
-                if (env.repo_is_dirty):
-                    warn("Repository is dirty and thus not tagged.")
-                if (env.repo_tag_name is None):
-                    warn("This revision is not tagged.")
-        else:
-            print(yellow("Not checking to see if the project is tagged because 'no_tag' is set."))
 
         # we're going to put it into /tmp
         remote_archive_file = "/tmp/{}".format(os.path.basename(archive_file))
