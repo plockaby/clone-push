@@ -12,14 +12,14 @@ env.clone_base_dir = "/clone/sources"
 env.clone_path = "push/common"
 
 # this is the path on the remote system to which the project should be
-# deployed. this might be something like "/srv/wwwdata" and it should be set in
+# deployed. this might be something like "/srv/data" and it should be set in
 # the project's .pushrc file but you can set a default value here.
-env.host_path = "/srv/wwwdata"
+env.host_path = "/srv/data"
 
 # this is the user to which we will sudo when on the remote system in order to
-# install the project. this might be something like "wwwdata" and should be set
+# install the project. this might be something like "data" and should be set
 # in the project's .pushrc file but you can set a default value here.
-env.host_user = "wwwdata"
+env.host_user = "data"
 
 # define paths to tools. by using "hide" we avoid showing that we are running
 # these commands because nobody cares.
