@@ -397,7 +397,7 @@ class CleanUpTask(Task):
         go_forth = False
 
         # if the "force_clean_remote" flag is not set then ask the user if they want to delete things
-        if (str(env.get("force_clean_remote", False)) not in ["True", "1"]):
+        if (str(env.get("force_clean_remote", False)) in ["True", "1"]):
             go_forth = True
         else:
             if (confirm(red("Are you sure you wish to remove {} on {}? (You can skip this question by setting env.force_clean_remote to True.)".format(remote_path, env.host_string)))):
