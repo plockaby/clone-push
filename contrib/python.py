@@ -96,7 +96,7 @@ class PythonBuildTask(pushlib.BuildTask):
             local("{} setup.py install {}".format(env.python, layout))
 
             # get rid of cruft that isn't useful to us
-            local("{} {}/{} -type f -name \"*.egg-info\" -delete".format(env.tools['find'], env.python_release_dir, env.python_release_lib_dir))
+            local("{} {}/{} -name \"*.egg-info\" -exec {} -rf {{}} +".format(env.tools['find'], env.python_release_dir, env.python_release_lib_dir, env.tools['rm']))
 
 
 class PythonTestTask(pushlib.TestTask):
