@@ -145,11 +145,11 @@ class PythonTestTask(pushlib.TestTask):
 
             if (python_files):
                 for file in python_files.split("\n"):
-                    local("{} {} --ignore=E501,E221,E241".format(env.python_pep8, file))
+                    local("{} {} --ignore=E501,E221,E241,E203".format(env.python_pep8, file))
 
             if (python_bin_files):
                 for file in python_bin_files.split("\n"):
-                    local("{} {} --ignore=E501,E221,E241".format(env.python_pep8, file))
+                    local("{} {} --ignore=E501,E221,E241,E203".format(env.python_pep8, file))
 
             local("{} {}".format(env.tools['touch'], pep8linted))
 
