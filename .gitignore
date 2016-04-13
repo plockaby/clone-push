@@ -1,3 +1,4 @@
 .push
 .*.swp
+*.pyc
 bin/servers.py
