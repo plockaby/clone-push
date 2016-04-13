@@ -58,10 +58,12 @@ class PythonBuildTask(pushlib.BuildTask):
             # make a place for the virtualenv to exist
             local("{} -p {}".format(env.tools['mkdir'], env.python_virtualenv_root_dir))
 
+            # remember where the default python installation went
+            system_python_virtualenv = env.python_virtualenv
+
             # create the virtualenv
             with lcd(env.python_virtualenv_root_dir):
-                local("{} {}".format(env.python_virtualenv, virtualenv_name))
-                local("{} --relocatable {}".format(env.python_virtualenv, virtualenv_name))
+                local("{} {}".format(system_python_virtualenv, virtualenv_name))
 
             with settings(path("{}/{}/bin".format(env.python_virtualenv_root_dir, virtualenv_name), behavior="replace"),
                           shell_env(VIRTUAL_ENV="{}/{}".format(env.python_virtualenv_root_dir, virtualenv_name))):
@@ -74,6 +76,10 @@ class PythonBuildTask(pushlib.BuildTask):
 
                 # really build
                 self._build()
+
+            # make it so that we can move the virtualenv
+            with lcd(env.python_virtualenv_root_dir):
+                local("{} --relocatable {}".format(system_python_virtualenv, virtualenv_name))
         else:
             # really build
             self._build()
