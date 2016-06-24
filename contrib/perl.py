@@ -16,8 +16,6 @@ def load_defaults():
         with settings(hide('warnings'), warn_only=True):
             env.perl_prove = local("{} prove".format(env.tools['which']), capture=True)
             env.perl_prove_dir = "{}/prove_db".format(env.test_dir)
-            env.perl_cover = local("{} cover".format(env.tools['which']), capture=True)
-            env.perl_cover_dir = "{}/cover_db".format(env.test_dir)
 
         # these are settings that define where built stuff gets put
         env.perl_release_dir = env.release_dir
@@ -96,15 +94,8 @@ class PerlTestTask(pushlib.TestTask):
 
     def test(self):
         if (env.get("perl_prove", "") != ""):
-            if (env.get("perl_cover", "") != ""):
-                with shell_env(FORMATTER_OUTPUT_DIR="{}".format(env.perl_prove_dir),
-                               HARNESS_PERL_SWITCHES="-MDevel::Cover=-db,{}".format(env.perl_cover_dir)):
-                    local("{} -l -r --timer t 1> {}/perltests.xml".format(env.perl_prove, env.test_dir))
-                local("{} -silent -nosummary -report html_basic -outputdir {} -outputfile index.html {}".format(env.perl_cover, env.perl_cover_dir, env.perl_cover_dir))
-                local("{} -silent -nosummary -report clover -outputdir {} -outputfile index.xml {}".format(env.perl_cover, env.perl_cover_dir, env.perl_cover_dir))
-            else:
-                with shell_env(FORMATTER_OUTPUT_DIR="{}".format(env.perl_prove_dir)):
-                    local("{} -l -r --timer t 1> {}/perltests.xml".format(env.perl_prove, env.test_dir))
+            with shell_env(FORMATTER_OUTPUT_DIR="{}".format(env.perl_prove_dir)):
+                local("{} -l -r --timer t 1> {}/perltests.xml".format(env.perl_prove, env.test_dir))
 
 
 class PerlArchiveTask(pushlib.ArchiveTask):

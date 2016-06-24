@@ -17,9 +17,6 @@ def load_defaults():
             env.python_virtualenv = local("{} virtualenv".format(env.tools['which']), capture=True)
             env.python_pip = local("{} pip".format(env.tools['which']), capture=True)
             env.python_pep8 = local("{} pep8".format(env.tools['which']), capture=True)
-            env.python_nose = local("{} nosetests".format(env.tools['which']), capture=True)
-            env.python_coverage = local("{} coverage".format(env.tools['which']), capture=True)
-            env.python_coverage_dir = "{}/cover_db".format(env.test_dir)
 
         # these are settings that define where built stuff gets put
         env.python_release_dir = env.release_dir
@@ -134,11 +131,10 @@ class PythonTestTask(pushlib.TestTask):
             self._test()
 
     def _test(self):
-        if (env.get("python_nose", "") != ""):
-            if (env.get("python_coverage", "") != ""):
-                local("{} --with-xunit --xunit-file={}/nosetests.xml --no-byte-compile --exe --all-modules --traverse-namespace --with-coverage --cover-inclusive --cover-branches --cover-html --cover-html-dir={} --cover-xml-file={}/coverage.xml".format(env.python_nose, env.test_dir, env.python_coverage_dir, env.python_coverage_dir))
-            else:
-                local("{} --with-xunit --xunit-file={}/nosetests.xml --no-byte-compile --exe --all-modules --traverse-namespace".format(env.python_nose, env.test_dir))
+        if (os.path.exists("{}/tests".format(env.build_dir))):
+            if (os.path.isfile("{}/setup.py".format(env.build_dir))):
+                # test using the build system
+                local("{} setup.py test".format(env.python))
 
         if (env.get("python_pep8", "") != ""):
             pep8linted = "{}/.pep8linted".format(env.test_dir)
