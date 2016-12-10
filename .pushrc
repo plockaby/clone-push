@@ -26,7 +26,10 @@ class CustomArchiveTask(CopyArchiveTask):
     def before(self):
         # rename "bin" to "push"
         with lcd(env.release_dir):
-            local("mv bin push")
+            local("{} bin push".format(env.tools['mv']))
+
+        # remove pyc files
+        local("{} {} -type f -name \"*.pyc\" -exec {} -rf {{}} +".format(env.tools['find'], env.release_dir, env.tools['rm']))
 
         # the trailing slashes are for rsync
         execute(CopyDirectoryTask(), 'shared', 'push/')
