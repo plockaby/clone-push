@@ -145,13 +145,6 @@ JSLint against your project, too, you might write a `.pushrc` file like this:
     from fabric.api import env
     env.clone_path = "push/common"
 
-    class CustomCleanTask(PerlCleanTask, JSLintCleanTask):
-        __doc__ = pushlib.CleanTask.__doc__
-
-
-    class CustomMostlyCleanTask(PerlMostlyCleanTask, JSLintMostlyCleanTask):
-        __doc__ = pushlib.MostlyCleanTask.__doc__
-
 
     class CustomBuildTask(PerlBuildTask, JSLintBuildTask):
         __doc__ = pushlib.BuildTask.__doc__
@@ -161,35 +154,12 @@ JSLint against your project, too, you might write a `.pushrc` file like this:
         __doc__ = pushlib.TestTask.__doc__
 
 
-    class CustomArchiveTask(PerlArchiveTask, JSLintArchiveTask):
-        __doc__ = pushlib.ArchiveTask.__doc__
+    buildTask = CustomBuildTask()
+    testTask  = CustomTestTask()
 
 
-    class CustomLiveTask(PerlLiveTask, JSLintLiveTask):
-        __doc__ = pushlib.LiveTask.__doc__
-
-
-    class CustomCloneTask(PerlCloneTask, JSLintCloneTask):
-        __doc__ = pushlib.CloneTask.__doc__
-
-
-    class CustomDeployTask(PerlDeployTask, JSLintDeployTask):
-        __doc__ = pushlib.DeployTask.__doc__
-
-
-    cleanTask   = CustomCleanTask()
-    buildTask   = CustomBuildTask()
-    testTask    = CustomTestTask()
-    archiveTask = CustomArchiveTask()
-    liveTask    = CustomLiveTask()
-    cloneTask   = CustomCloneTask()
-    deployTask  = CustomDeployTask()
-
-
-It may seem like a waste of time to write all those empty classes. However, you
-will not always know which tasks are implemented by the modules you are using.
-To ensure maximum compatibiity, it is safest to write empty classes for all
-tasks.
+If the multiple deployment types implement other tasks such as `Clean` or
+`Archive` then you will have to write those into your script as well.
 
 `push` is just a series of Fabric scripts. After configuring your project's
 `.pushrc` file you can see what tasks you may run using `push -l`:
@@ -286,7 +256,10 @@ These flags can all be passed to push like this:
     push --set=no_tag=1 ...
 
 The values "True" or "1" will enable setting and anything else will disable the
-setting.
+setting. These flags can usually also be set with environment variables like
+this:
+
+    NO_TAG=1 push ...
 
 The other way to set this flags is permanently in the project's `.pushrc` file
 like this:
@@ -297,7 +270,9 @@ like this:
 
 #### no_tag
 
-Normally a project will be not be deployed to nocref if the version being deployed is not tagged. This will allow an untagged project to be deployed.
+Normally a project will be not be deployed to the clone host if the version
+being deployed is not tagged. This will allow an untagged project to be
+deployed.
 
 
 ### Extending
@@ -357,5 +332,5 @@ This software requires:
 ### Credits and Copyright
 
 This project is a derivation of a similar project created and used internally
-by the University of Washington Information Technology Computing Infrastructure
+by the University of Washington Information Technology IT Infrastructure
 division. The code seen here was created by Paul Lockaby.
