@@ -298,7 +298,7 @@ class CloneTask(Task):
         # call before hooks
         self.before()
 
-        if (str(env.get("no_tag", False)) not in ["True", "1"]):
+        if (str(env.get("no_tag", os.environ.get("NO_TAG", False))) not in ["True", "1"]):
             if (env.repo_is_dirty and not confirm(red("Repository is dirty and thus not tagged. Deploy anyway?"))):
                 abort("Aborting at user request.")
             if (env.repo_tag_name is None and not confirm(red("This revision is not tagged. Deploy anyway?"))):
