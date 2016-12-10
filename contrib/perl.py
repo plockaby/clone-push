@@ -86,11 +86,11 @@ class PerlTestTask(pushlib.TestTask):
         super(PerlTestTask, self).after()
 
         # run perl tests
-        if (str(env.get("skip_tests", False)) not in ["True", "1"]):
+        if (str(env.get("skip_tests", os.environ.get("SKIP_TESTS", False))) not in ["True", "1"]):
             with lcd(env.build_dir):
                 self.test()
         else:
-            print(yellow("Not tests because 'skip_tests' is set."))
+            print(yellow("Not running tests because 'skip_tests' is set."))
 
     def test(self):
         if (env.get("perl_prove", "") != ""):
