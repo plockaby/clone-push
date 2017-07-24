@@ -31,15 +31,15 @@ env.temp_dir        = "{}/temp".format(env.containment_dir)
 # call "clean" and this lets us do that.
 env.completed_tasks = {}
 
-with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
+with settings(hide("warnings", "running", "stdout", "stderr"), warn_only=True):
     # the path to the root of the git repository
-    env.git_root_dir = local("{} rev-parse --show-toplevel".format(env.tools['git']), capture=True)
+    env.git_root_dir = local("{} rev-parse --show-toplevel".format(env.tools["git"]), capture=True)
 
     # get the latest commit/tag and branch of the repo or HEAD if no commit/tag and/or branch
-    if (int(local("{} {}/.git/refs/heads/ | wc -l | tr -d ' '".format(env.tools['ls'], env.git_root_dir), capture=True)) != 0):
-        env.repo_commit_name = local("{} describe --always --dirty".format(env.tools['git']), capture=True)
-        env.repo_branch_name = local("{} rev-parse --abbrev-ref HEAD".format(env.tools['git']), capture=True)
-        env.repo_tag_name = local("{} describe --tags --exact-match".format(env.tools['git']), capture=True)
+    if (int(local("{} {}/.git/refs/heads/ | wc -l | tr -d ' '".format(env.tools["ls"], env.git_root_dir), capture=True)) != 0):
+        env.repo_commit_name = local("{} describe --always --dirty".format(env.tools["git"]), capture=True)
+        env.repo_branch_name = local("{} rev-parse --abbrev-ref HEAD".format(env.tools["git"]), capture=True)
+        env.repo_tag_name = local("{} describe --tags --exact-match".format(env.tools["git"]), capture=True)
 
     if (env.get("repo_commit_name", "") == ""):
         env.repo_commit_name = "HEAD"
@@ -49,7 +49,7 @@ with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
         env.repo_tag_name = None
 
     # is set to "true" if the repository is dirty
-    if (str(local("{} status -s".format(env.tools['git']), capture=True)) != ""):
+    if (str(local("{} status -s".format(env.tools["git"]), capture=True)) != ""):
         env.repo_is_dirty = True
     else:
         env.repo_is_dirty = False
@@ -74,7 +74,7 @@ class CleanTask(Task):
         # clean absolutely everything, including the list of tasks that have been run
         env.completed_tasks = {}
 
-        local("{} -rf {}".format(env.tools['rm'], env.containment_dir))
+        local("{} -rf {}".format(env.tools["rm"], env.containment_dir))
         print(green("Finished cleaning project."))
 
 
@@ -89,10 +89,10 @@ class MostlyCleanTask(Task):
         # clean absolutely everything, including the list of tasks that have been run
         env.completed_tasks = {}
 
-        local("{} -rf {}".format(env.tools['rm'], env.build_dir))
-        local("{} -rf {}".format(env.tools['rm'], env.archive_dir))
-        local("{} -rf {}".format(env.tools['rm'], env.release_dir))
-        local("{} -rf {}".format(env.tools['rm'], env.temp_dir))
+        local("{} -rf {}".format(env.tools["rm"], env.build_dir))
+        local("{} -rf {}".format(env.tools["rm"], env.archive_dir))
+        local("{} -rf {}".format(env.tools["rm"], env.release_dir))
+        local("{} -rf {}".format(env.tools["rm"], env.temp_dir))
         print(green("Finished cleaning project."))
 
 
@@ -115,13 +115,13 @@ class BuildTask(Task):
             return
 
         # run prereqs
-        execute('mostlyclean')
+        execute("mostlyclean")
 
         # call before hooks
         self.before()
 
         # create release directories, build directory gets created by rsync
-        local("{} -p {}".format(env.tools['mkdir'], env.release_dir))
+        local("{} -p {}".format(env.tools["mkdir"], env.release_dir))
 
         # copy the root directory into the .push/build directory. need to
         # append the trailing slash to make rsync copy the contents of the
@@ -156,13 +156,13 @@ class TestTask(Task):
             return
 
         # run prereqs
-        execute('build')
+        execute("build")
 
         # call before hooks
         self.before()
 
         # no tests by default
-        local("{} -p {}".format(env.tools['mkdir'], env.test_dir))
+        local("{} -p {}".format(env.tools["mkdir"], env.test_dir))
 
         # call after hooks
         self.after()
@@ -192,7 +192,7 @@ class ArchiveTask(Task):
             return
 
         # run prereqs
-        execute('test')
+        execute("test")
 
         # call before hooks
         self.before()
@@ -202,8 +202,8 @@ class ArchiveTask(Task):
             abort("No release directory found. Cannot create archive.")
 
         # create the archive
-        local("{} -p {}".format(env.tools['mkdir'], env.archive_dir))
-        local("{} -czf {}/{} -C {} -p .".format(env.tools['tar'], env.archive_dir, env.archive_name, env.release_dir))
+        local("{} -p {}".format(env.tools["mkdir"], env.archive_dir))
+        local("{} -czf {}/{} -C {} -p .".format(env.tools["tar"], env.archive_dir, env.archive_name, env.release_dir))
 
         # call after hooks
         self.after()
@@ -229,7 +229,7 @@ class LiveTask(Task):
 
     def run(self, *roles):
         # run prereqs
-        execute('archive')
+        execute("archive")
 
         # call before hooks
         self.before()
@@ -291,7 +291,7 @@ class CloneTask(Task):
 
     def run(self):
         # run prereqs
-        execute('archive')
+        execute("archive")
 
         # call before hooks
         self.before()
@@ -357,19 +357,19 @@ class DeployTask(Task):
 
     def run(self, **kwargs):
         # run prereqs
-        execute('archive')
+        execute("archive")
 
         # set default arguments. this is being set like this so that when we
         # forward the arguments to "before" and "after" that they get the
         # default values that we set in here.
-        kwargs['archive_file'] = kwargs.get('archive_file', "{}/{}".format(env.archive_dir, env.archive_name))
-        kwargs['remote_user'] = kwargs.get('remote_user', env.host_user)
-        kwargs['remote_path'] = kwargs.get('remote_path', env.host_path)
+        kwargs["archive_file"] = kwargs.get("archive_file", "{}/{}".format(env.archive_dir, env.archive_name))
+        kwargs["remote_user"] = kwargs.get("remote_user", env.host_user)
+        kwargs["remote_path"] = kwargs.get("remote_path", env.host_path)
 
         # now get the values we're going to use
-        archive_file = kwargs.get('archive_file')
-        remote_user = kwargs.get('remote_user')
-        remote_path = kwargs.get('remote_path')
+        archive_file = kwargs.get("archive_file")
+        remote_user = kwargs.get("remote_user")
+        remote_path = kwargs.get("remote_path")
 
         print(cyan("Deploying {} to {}:{} as user {}.".format(archive_file, env.host_string, remote_path, remote_user)))
 
@@ -429,5 +429,5 @@ class CopyDirectoryTask(Task):
             destination = "{}/{}".format(env.release_dir, destination)
 
         if (os.path.isdir(source)):
-            local("{} -p {}".format(env.tools['mkdir'], destination))
-            local("{} -ah --numeric-ids --exclude=.git --exclude=.gitignore --exclude={}/.gitignore --exclude-from=.gitignore --exclude-from={}/.gitignore {} {}".format(env.tools['rsync'], env.git_root_dir, env.git_root_dir, source, destination))
+            local("{} -p {}".format(env.tools["mkdir"], destination))
+            local("{} -ah --numeric-ids --exclude=.git --exclude=.gitignore --exclude={}/.gitignore --exclude-from=.gitignore --exclude-from={}/.gitignore {} {}".format(env.tools["rsync"], env.git_root_dir, env.git_root_dir, source, destination))

@@ -4,18 +4,18 @@ from fabric.api import env
 
 # add the list of generic servers
 env.servers = {
-    'foo': 'foo.example.com',
-    'bar': 'bar.example.com'
+    "foo": "foo.example.com",
+    "bar": "bar.example.com"
 }
 
 env.servers.update({
-    'all': [
-        env.servers['foo'],
-        env.servers['bar'],
+    "all": [
+        env.servers["foo"],
+        env.servers["bar"],
     ]
 })
 
 # this is to deploy to the clone server
 env.servers.update({
-    'clone': 'clone.example.com',
+    "clone": "clone.example.com",
 })

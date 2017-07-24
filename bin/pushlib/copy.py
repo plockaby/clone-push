@@ -18,7 +18,7 @@ class CopyBuildTask(pushlib.BuildTask):
     def after(self):
         super(CopyBuildTask, self).after()
 
-        for path in ['bin', 'lib', 'etc', 'web', 'www']:
+        for path in ["bin", "lib", "etc", "web", "www"]:
             execute(pushlib.CopyDirectoryTask(), path)
 
 

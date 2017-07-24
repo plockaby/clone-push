@@ -10,7 +10,7 @@ except:
     pass
 
 # run Fabric like normal
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
     from fabric.main import main
     sys.exit(main())

@@ -22,7 +22,7 @@ while os.path.split(os.path.abspath(path))[1]:
     if os.path.exists(joined):
         rc = os.path.abspath(joined)
         break
-    path = os.path.join('..', path)
+    path = os.path.join("..", path)
 
 # load the file
 execfile(rc)
