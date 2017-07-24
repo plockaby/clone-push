@@ -3,6 +3,7 @@
 import os
 import sys
 import socket
+import re
 from fabric.tasks import Task
 from fabric.api import env, task, settings, hide, execute, local, sudo, abort, warn, put, run, lcd
 from fabric.colors import red, cyan, green, yellow
@@ -30,12 +31,11 @@ env.temp_dir        = "{}/temp".format(env.containment_dir)
 # call "clean" and this lets us do that.
 env.completed_tasks = {}
 
-# the path to the root of the git repository
 with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
+    # the path to the root of the git repository
     env.git_root_dir = local("{} rev-parse --show-toplevel".format(env.tools['git']), capture=True)
 
-# get the latest commit/tag and branch of the repo or HEAD if no commit/tag and/or branch
-with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
+    # get the latest commit/tag and branch of the repo or HEAD if no commit/tag and/or branch
     if (int(local("{} {}/.git/refs/heads/ | wc -l | tr -d ' '".format(env.tools['ls'], env.git_root_dir), capture=True)) != 0):
         env.repo_commit_name = local("{} describe --always --dirty".format(env.tools['git']), capture=True)
         env.repo_branch_name = local("{} rev-parse --abbrev-ref HEAD".format(env.tools['git']), capture=True)
@@ -48,8 +48,7 @@ with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
     if (env.get("repo_tag_name", "") == ""):
         env.repo_tag_name = None
 
-# is set to "true" if the repository is dirty
-with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
+    # is set to "true" if the repository is dirty
     if (str(local("{} status -s".format(env.tools['git']), capture=True)) != ""):
         env.repo_is_dirty = True
     else:
@@ -262,10 +261,6 @@ class LiveTask(Task):
                     else:
                         warn("Ignoring \"{}\" because it is not in the configured list of servers.".format(role))
 
-        # if we didn't find any hosts then explode
-        if (len(hosts) == 0):
-            abort("No hosts found for deployment")
-
         # don't do it in parallel, sometimes the plugin modules have prompts.
         for host in hosts:
             with settings(hosts=host):
@@ -302,17 +297,23 @@ class CloneTask(Task):
         self.before()
 
         if (str(env.get("no_tag", os.environ.get("NO_TAG", False))) not in ["True", "1"]):
-            if (env.repo_is_dirty and not confirm(red("Repository is dirty and thus not tagged. Deploy anyway?"))):
+            if (env.repo_is_dirty and not confirm(red("Repository is dirty and therefore not tagged. Deploy anyway?"))):
                 abort("Aborting at user request.")
             if (env.repo_tag_name is None and not confirm(red("This revision is not tagged. Deploy anyway?"))):
-                abort("Aborting at user request.")
                 warn("This revision is not tagged.")
+                abort("Aborting at user request.")
 
             if (not env.repo_is_dirty and env.repo_tag_name is not None):
-                print(green("Project is tagged at version {} and ready for release.".format(env.repo_tag_name)))
+                # tag must look like: v#.# or v#.#-asdf
+                valid_tag_pattern = re.compile("^v\d+\.\d+($|\-)")
+                if (not valid_tag_pattern.match(env.repo_tag_name)):
+                    if (not confirm(red("Repository tag {} does not match format vX.Y. Deploy anyway?".format(env.repo_tag_name)))):
+                        abort("Aborting at user request.")
+                else:
+                    print(green("Project is tagged at version {} and ready for release.".format(env.repo_tag_name)))
             else:
                 if (env.repo_is_dirty):
-                    warn("Repository is dirty and thus not tagged.")
+                    warn("Repository is dirty and therefore not tagged.")
                 if (env.repo_tag_name is None):
                     warn("This revision is not tagged.")
         else:
