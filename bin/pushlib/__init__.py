@@ -217,7 +217,7 @@ class ArchiveTask(Task):
 
 class LiveTask(Task):
     """
-        deploy the project locally or use "live:nickname" to deploy to a particular server
+        deploy the project locally or use "live:nickname" to deploy to a particular host
     """
 
     name = "live"
@@ -257,7 +257,10 @@ class LiveTask(Task):
                     else:
                         hosts.append(env.servers[role])
                 else:
-                    warn("Ignoring \"{}\" because it is not in the configured list of servers.".format(role))
+                    if (confirm(red("No host or tag named \"{}\" found in server list. Should we deploy to \"{}\" anyway?".format(role, role)))):
+                        hosts.append(role)
+                    else:
+                        warn("Ignoring \"{}\" because it is not in the configured list of servers.".format(role))
 
         # if we didn't find any hosts then explode
         if (len(hosts) == 0):
