@@ -43,6 +43,7 @@ with hide("running"):
     env.tools["make"]  = local("which make", capture=True)
     env.tools["touch"] = local("which touch", capture=True)
     env.tools["awk"]   = local("which awk", capture=True)
+    env.tools["cat"]   = local("which cat", capture=True)
 
 # it's ok if we can't find the dart-config tool.
 with settings(hide("running", "warnings"), warn_only=True):
