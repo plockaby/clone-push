@@ -1,23 +1,13 @@
 #!/usr/bin/env python2.7
 
-import os
+import sys
 import config
 
 
-# this is the name of the file we're looking for
-# this will be updated to have the full, absolute path to the real file
-rc = ".pushrc"
-
-# start looking in the current directory and work toward the filesystem root
-path = "."
-
-# stop before falling off root of filesystem (should be platform agnostic)
-while os.path.split(os.path.abspath(path))[1]:
-    joined = os.path.join(path, rc)
-    if os.path.exists(joined):
-        rc = os.path.abspath(joined)
-        break
-    path = os.path.join("..", path)
-
-# load the file
-execfile(rc)
+try:
+    # load the file from the current directory
+    execfile(".pushrc")
+except Exception as e:
+    # this is because printing to stderr in python2 is not the same as python3
+    sys.stderr.write("Could not load .pushrc file: {}\n".format(str(e)))
+    sys.exit(1)
