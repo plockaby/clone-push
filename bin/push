@@ -22,7 +22,7 @@ args = [
     # the python executable that we're already running
     sys.executable,
 
-    # our replacement for the fab executable that ignores PyCrypto errors
+    # our replacement for the fab executable
     "{}/fabrunner.py".format(path),
 
     # our way to force fabric to load from .pushrc files
