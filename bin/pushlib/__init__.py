@@ -2,6 +2,7 @@
 
 import os
 import sys
+import json
 import socket
 import re
 from fabric.tasks import Task
@@ -216,7 +217,7 @@ class ArchiveTask(Task):
 
 class LiveTask(Task):
     """
-        deploy the project locally or use "live:nickname" to deploy to a particular host
+        deploy the project using "live:nickname" to deploy to a particular server
     """
 
     name = "live"
@@ -319,22 +320,12 @@ class CloneTask(Task):
         else:
             print(yellow("Not checking to see if the project is tagged because 'no_tag' is set."))
 
-        if ("servers" in env and "clone" in env.servers):
-            hosts = []
-            if (isinstance(env.servers["clone"], list)):
-                hosts += env.servers["clone"]
-            else:
-                hosts.append(env.servers["clone"])
-
-            for host in hosts:
-                with settings(hosts=host):
-                    execute("deploy",
-                            archive_file="{}/{}".format(env.archive_dir, env.archive_name),
-                            remote_user=env.host_user,
-                            remote_path="{}/{}{}".format(env.clone_base_dir, env.clone_path, env.host_path),
-                            )
-        else:
-            abort("Could not find \"clone\" in configured list of servers.")
+        with settings(hosts=env.clone_host):
+            execute("deploy",
+                    archive_file="{}/{}".format(env.archive_dir, env.archive_name),
+                    remote_user=env.host_user,
+                    remote_path="{}/{}{}".format(env.clone_base_dir, env.clone_path, env.host_path),
+                    )
 
         # call after hooks
         self.after()

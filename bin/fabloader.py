@@ -3,11 +3,6 @@
 import os
 import config
 
-# try to import the servers list but it's ok if we can't
-try:
-    import servers
-except ImportError:
-    pass
 
 # this is the name of the file we're looking for
 # this will be updated to have the full, absolute path to the real file

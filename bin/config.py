@@ -2,6 +2,9 @@
 
 from fabric.api import env, hide, local
 
+# this is the host where our clone system lives.
+env.clone_host = "localhost"
+
 # this is the path to where the sources are located for the clone system. this
 # might be something like "/clone/sources".
 env.clone_base_dir = "/clone/sources"
