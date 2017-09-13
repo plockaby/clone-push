@@ -1,4 +1,10 @@
-.push
 .*.swp
+*~
+.DS_Store
+.idea
+.push
+.eggs
+*.egg-info
+__pycache__
 *.pyc
-bin/servers.py
+venv
