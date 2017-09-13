@@ -22,7 +22,7 @@ def load_defaults():
         env.python_release_dir = env.release_dir
         env.python_release_lib_dir = "lib/python"
         env.python_release_bin_dir = "bin"
-        env.python_virtualenv_root_dir = "{}/sbin/venv".format(env.release_dir)
+        env.python_virtualenv_root_dir = "{}/venv".format(env.release_dir)
 
 
 class PythonCleanTask(pushlib.CleanTask):
@@ -142,8 +142,8 @@ class PythonArchiveTask(pushlib.ArchiveTask):
         # get rid of cruft that isn't useful to us
         local("{} {}/{} -name \"*.egg-info\" -exec {} -rf {{}} +".format(env.tools['find'], env.python_release_dir, env.python_release_lib_dir, env.tools['rm']))
         local("{} {}/{} -name \".eggs\" -exec {} -rf {{}} +".format(env.tools['find'], env.python_release_dir, env.python_release_lib_dir, env.tools['rm']))
-        local("{} {} -path {}/sbin/venv -prune -o -type d -name \"__pycache__\" -print -exec {} -rf {{}} +".format(env.tools['find'], env.release_dir, env.release_dir, env.tools['rm']))
-        local("{} {} -path {}/sbin/venv -prune -o -type f -name \"*.pyc\" -print -exec {} -rf {{}} +".format(env.tools['find'], env.release_dir, env.release_dir, env.tools['rm']))
+        local("{} {} -path {}/venv -prune -o -type d -name \"__pycache__\" -print -exec {} -rf {{}} +".format(env.tools['find'], env.release_dir, env.release_dir, env.tools['rm']))
+        local("{} {} -path {}/venv -prune -o -type f -name \"*.pyc\" -print -exec {} -rf {{}} +".format(env.tools['find'], env.release_dir, env.release_dir, env.tools['rm']))
 
         # remove empty directories
         local("{} {} -type d -empty -delete".format(env.tools['find'], env.release_dir))
@@ -163,7 +163,7 @@ class PythonDeployTask(pushlib.DeployTask):
     def before(self, **kwargs):
         if (env.get("virtualenv") is not None):
             # remove the existing venv directory to clean out any old files
-            execute(CleanUpTask(), "{}/sbin/venv/{}".format(kwargs.get('remote_path'), env.virtualenv), kwargs.get('remote_user'))
+            execute(CleanUpTask(), "{}/venv/{}".format(kwargs.get('remote_path'), env.virtualenv), kwargs.get('remote_user'))
 
 
 # being passed along so it gets imported into .pushrc
