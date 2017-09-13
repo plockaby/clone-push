@@ -202,6 +202,11 @@ class ArchiveTask(Task):
         if (not os.path.isdir(env.release_dir)):
             abort("No release directory found. Cannot create archive.")
 
+        # clean up empty directories but make sure the release directory exists
+        # sometimes we have projects that don't actually have any files
+        local("{} {} -type d -empty -delete".format(env.tools["find"], env.release_dir))
+        local("{} -p {}".format(env.tools["mkdir"], env.release_dir))
+
         # create the archive
         local("{} -p {}".format(env.tools["mkdir"], env.archive_dir))
         local("{} -czf {}/{} -C {} -p .".format(env.tools["tar"], env.archive_dir, env.archive_name, env.release_dir))

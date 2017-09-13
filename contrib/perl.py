@@ -101,6 +101,12 @@ class PerlTestTask(pushlib.TestTask):
 class PerlArchiveTask(pushlib.ArchiveTask):
     __doc__ = pushlib.ArchiveTask.__doc__
 
+    def before(self):
+        super(PerlArchiveTask, self).before()
+
+        # clean up man files
+        local("{} -rf {}/man".format(env.tools["rm"], env.release_dir))
+
 
 class PerlLiveTask(pushlib.LiveTask):
     __doc__ = pushlib.LiveTask.__doc__
