@@ -120,6 +120,10 @@ class PerlDeployTask(pushlib.DeployTask):
     __doc__ = pushlib.DeployTask.__doc__
 
 
+class PerlRegisterTask(pushlib.RegisterTask):
+    __doc__ = pushlib.RegisterTask.__doc__
+
+
 # being passed along so it gets imported into .pushrc
 # not exported to fabric and not an executable task
 class CopyDirectoryTask(pushlib.CopyDirectoryTask):
@@ -141,3 +145,4 @@ archiveTask     = PerlArchiveTask()
 liveTask        = PerlLiveTask()
 cloneTask       = PerlCloneTask()
 deployTask      = PerlDeployTask()
+registerTask    = PerlRegisterTask()

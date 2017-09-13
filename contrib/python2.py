@@ -163,6 +163,10 @@ class PythonDeployTask(pushlib.DeployTask):
             execute(CleanUpTask(), "{}/venv/{}".format(kwargs.get('remote_path'), env.virtualenv), kwargs.get('remote_user'))
 
 
+class PythonRegisterTask(pushlib.RegisterTask):
+    __doc__ = pushlib.RegisterTask.__doc__
+
+
 # being passed along so it gets imported into .pushrc
 # not exported to fabric and not an executable task
 class CopyDirectoryTask(pushlib.CopyDirectoryTask):
@@ -184,3 +188,4 @@ archiveTask     = PythonArchiveTask()
 liveTask        = PythonLiveTask()
 cloneTask       = PythonCloneTask()
 deployTask      = PythonDeployTask()
+registerTask    = PythonRegisterTask()

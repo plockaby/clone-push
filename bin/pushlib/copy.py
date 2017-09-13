@@ -42,6 +42,10 @@ class CopyDeployTask(pushlib.DeployTask):
     __doc__ = pushlib.DeployTask.__doc__
 
 
+class CopyRegisterTask(pushlib.RegisterTask):
+    __doc__ = pushlib.RegisterTask.__doc__
+
+
 # being passed along so it gets imported into .pushrc
 # not exported to fabric and not an executable task
 class CopyDirectoryTask(pushlib.CopyDirectoryTask):
@@ -63,3 +67,4 @@ archiveTask     = CopyArchiveTask()
 liveTask        = CopyLiveTask()
 cloneTask       = CopyCloneTask()
 deployTask      = CopyDeployTask()
+registerTask    = CopyRegisterTask()

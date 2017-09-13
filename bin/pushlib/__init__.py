@@ -93,7 +93,7 @@ with settings(hide("running", "stdout"), warn_only=True):
     # a dict, keyed by tag, value is an array of hostnames
     env.dart["tags"] = dict()
 
-    # a dict, keyed by hostname, value is an array of nocref targets
+    # a dict, keyed by hostname, value is None
     env.dart["servers"] = dict()
 
     # only load hosts if we're going to do a live push
@@ -121,8 +121,8 @@ with settings(hide("running", "stdout"), warn_only=True):
                     env.dart["tags"]["all"] = []
                 env.dart["tags"]["all"].append(hostname)
 
-                # add hostname and nocref targets
-                env.dart["servers"][hostname] = captured[hostname].get("targets")
+                # add hostname
+                env.dart["servers"][hostname] = None
         except Exception as e:
             warn("Could not decode dart host list: {}".format(repr(e)))
 
@@ -303,32 +303,33 @@ class LiveTask(Task):
         # call before hooks
         self.before()
 
-        # these are all the hosts we're going to deploy to
+        # these are the hosts that we might deploy to
         hosts = []
 
-        # add any hosts defined using the -H option
-        if (len(env.hosts) != 0):
-            hosts += env.hosts
-
+        # if no roles were given then we can't deploy to anything. the roles
+        # come from "live:rolename".
         if (len(roles) == 0):
-            # if there are no roles given then deploy to localhost but do it
-            # through our public interface.
-            hosts.append(socket.getfqdn())
-        else:
-            # look at everything in the argument list and if it is a defined
-            # role then add the defined role. if it is not a defined role then
-            # add it verbatim because maybe it's a hostname.
+            abort("Must specify at least one server or tag.")
+
+        # look at everything in the argument list and if it is a defined role
+        # then add the defined role.
+        for role in roles:
+            # is the role a tag name? if it is then get all of the hosts
+            # that the tag maps to and add them to the list
+            if (role in env.dart["tags"]):
+                hosts += env.dart["tags"][role]
+
+            # is the role a host name?
+            if (role in env.dart["servers"]):
+                hosts.append(role)
+
+        # if the given role wasn't found then maybe there's a reason for that
+        if (len(hosts) == 0):
             for role in roles:
-                if ("servers" in env and role in env.servers):
-                    if (isinstance(env.servers[role], list)):
-                        hosts += env.servers[role]
-                    else:
-                        hosts.append(env.servers[role])
+                if (confirm(red("No server or tag named \"{}\" found in host list. Should we deploy directly to \"{}\"?".format(role, role)))):
+                    hosts.append(role)
                 else:
-                    if (confirm(red("No host or tag named \"{}\" found in server list. Should we deploy to \"{}\" anyway?".format(role, role)))):
-                        hosts.append(role)
-                    else:
-                        warn("Ignoring \"{}\" because it is not in the configured list of servers.".format(role))
+                    warn("Ignoring \"{}\" because it is not a valid server or tag name.".format(role))
 
         # don't do it in parallel, sometimes the plugin modules have prompts.
         for host in hosts:
@@ -361,6 +362,9 @@ class CloneTask(Task):
     def run(self):
         # run prereqs
         execute("archive")
+
+        # when we deploy to ref we want to update the registration, too
+        execute('register')
 
         # call before hooks
         self.before()
@@ -450,6 +454,33 @@ class DeployTask(Task):
         sudo("{} -p {}".format(remote_mkdir, remote_path), user=remote_user)
         sudo("{} zxf {} -C {} -p --no-same-owner --overwrite-dir".format(remote_tar, remote_archive_file, remote_path), user=remote_user)
         run("{} -f {}".format(remote_rm, remote_archive_file))
+
+        # call after hooks
+        self.after(**kwargs)
+
+
+class RegisterTask(Task):
+    """
+        registers the task with dart if a .dartrc file is present
+    """
+
+    name = "register"
+
+    def before(self, **kwargs):
+        pass
+
+    def after(self, **kwargs):
+        pass
+
+    def run(self, **kwargs):
+        # call before hooks
+        self.before(**kwargs)
+
+        if (os.path.isfile("{}/.dartrc".format(env.current_dir))):
+            print(cyan("Registering .dartrc from {} with dart.".format(env.current_dir)))
+            local("{} {}/.dartrc | {} register -".format(env.tools["cat"], env.current_dir, env.tools["dart"]))
+        else:
+            warn("Could not register with dart because no .dartrc file was found in {}.".format(env.current_dir))
 
         # call after hooks
         self.after(**kwargs)
