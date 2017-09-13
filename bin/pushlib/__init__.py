@@ -476,11 +476,14 @@ class RegisterTask(Task):
         # call before hooks
         self.before(**kwargs)
 
-        if (os.path.isfile("{}/.dartrc".format(env.current_dir))):
-            print(cyan("Registering .dartrc from {} with dart.".format(env.current_dir)))
-            local("{} {}/.dartrc | {} register -".format(env.tools["cat"], env.current_dir, env.tools["dart"]))
+        if (env.tools["dart"]):
+            if (os.path.isfile("{}/.dartrc".format(env.current_dir))):
+                print(cyan("Registering .dartrc from {} with dart.".format(env.current_dir)))
+                local("{} {}/.dartrc | {} register -".format(env.tools["cat"], env.current_dir, env.tools["dart"]))
+            else:
+                warn("Could not register with dart because no .dartrc file was found in {}.".format(env.current_dir))
         else:
-            warn("Could not register with dart because no .dartrc file was found in {}.".format(env.current_dir))
+            warn("Could not register with dart because dart-config was not found.")
 
         # call after hooks
         self.after(**kwargs)
