@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.7
 
-from fabric.api import env, hide, local
+from fabric.api import env, hide, local, settings
 
 # this is the host where our clone system lives.
 env.clone_host = "localhost"
@@ -25,7 +25,8 @@ env.host_path = "/srv/data"
 env.host_user = "data"
 
 # define paths to tools. by using "hide" we avoid showing that we are running
-# these commands because nobody cares.
+# these commands because nobody cares. if any of these fails then the whole
+# thing will fail.
 with hide("running"):
     env.tools = {}
     env.tools["ls"]    = local("which ls", capture=True)
@@ -42,3 +43,7 @@ with hide("running"):
     env.tools["make"]  = local("which make", capture=True)
     env.tools["touch"] = local("which touch", capture=True)
     env.tools["awk"]   = local("which awk", capture=True)
+
+# it's ok if we can't find the dart-config tool.
+with settings(hide("running", "warnings"), warn_only=True):
+    env.tools["dart"]  = local("which dart-config", capture=True)

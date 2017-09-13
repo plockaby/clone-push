@@ -35,10 +35,12 @@ env.completed_tasks = {}
 with settings(hide("warnings", "running", "stdout", "stderr"), warn_only=True):
     # the path to the root of the git repository
     env.git_root_dir = local("{} rev-parse --show-toplevel".format(env.tools["git"]), capture=True)
+    if (not env.git_root_dir):
+        abort("Could not find root of git repository.")
 
     # get the latest commit/tag and branch of the repo or HEAD if no commit/tag and/or branch
     if (int(local("{} {}/.git/refs/heads/ | wc -l | tr -d ' '".format(env.tools["ls"], env.git_root_dir), capture=True)) != 0):
-        env.repo_commit_name = local("{} describe --always --dirty".format(env.tools["git"]), capture=True)
+        env.repo_commit_name = local("{} log -1 | head -n 1".format(env.tools["git"]), capture=True).replace("commit", "").strip()
         env.repo_branch_name = local("{} rev-parse --abbrev-ref HEAD".format(env.tools["git"]), capture=True)
         env.repo_tag_name = local("{} describe --tags --exact-match".format(env.tools["git"]), capture=True)
 
@@ -55,13 +57,74 @@ with settings(hide("warnings", "running", "stdout", "stderr"), warn_only=True):
     else:
         env.repo_is_dirty = False
 
-# the name of the current directory, used as the tool name when doing certain tasks
-env.project_name = os.path.basename(os.path.normpath(os.getcwd()))
+    # this is the name of the project from which we are deploying
+    env.git_origin = local("{} ls-remote --get-url origin".format(env.tools["git"]), capture=True)
+    if (env.git_origin == "origin"):
+        abort("Could not find the origin for this git repository.")
 
-# the name of the archive we will create when asked to create the archive
-# if the thing is dirty the append "dirty" to it
-env.repo_version = "{}{}".format(env.repo_commit_name, ("-dirty" if env.repo_is_dirty else ""))
-env.archive_name = "{}-version-{}.tar.gz".format(env.project_name, env.repo_version)
+# make sure we have some basic files
+if (not os.path.exists("{}/.gitignore".format(env.git_root_dir) or not os.path.exists("{}/.gitignore".format(os.getcwd())))):
+    abort("Could not find .gitignore file in project root or current directory.")
+if (not os.path.exists("{}/.pushrc".format(os.getcwd()))):
+    abort("Could not find .pushrc file in current directory.")
+
+# the name of the project is based on the git project and the current directory
+project_name_match = re.search(".*\/(.*)\.git$", env.git_origin)
+if (project_name_match):
+    env.project_name = project_name_match.group(1)
+else:
+    abort("Could not extract project name from origin.")
+if (os.path.normpath(os.getcwd()) != os.path.normpath(env.git_root_dir)):
+    # if we are in a subdirectory to our git project then use that subdirectory
+    # as our component name. if there are multiple subdirectories then turn
+    # each slash (/) into a hyphen. but we need to ignore the leading hyphen.
+    env.project_component = os.path.normpath(os.getcwd()).replace(os.path.normpath(env.git_root_dir), "").replace("/", "-")[1:]
+else:
+    # otherwise we have no distinct component
+    env.project_component = ""
+
+# the name of the archive we will create when asked to create the archive.
+env.archive_name = "{}-{}-v{}.tar.gz".format(env.project_name, env.project_component, env.repo_commit_name)
+
+# collect our host information
+with settings(hide("running", "stdout"), warn_only=True):
+    env.dart = dict()
+
+    # a dict, keyed by tag, value is an array of hostnames
+    env.dart["tags"] = dict()
+
+    # a dict, keyed by hostname, value is an array of nocref targets
+    env.dart["servers"] = dict()
+
+    # only load hosts if we're going to do a live push
+    load_dart_hosts = False
+    for x in env.tasks:
+        if (x.startswith("live")):
+            load_dart_hosts = True
+
+    if (not env.tools["dart"]):
+        warn("Could not find dart-config tool.")
+
+    if (env.tools["dart"] and load_dart_hosts):
+        try:
+            captured = json.loads(local("{} hosts".format(env.tools["dart"], capture=True)))
+            for hostname in captured:
+                # add tags and hostnames
+                if ("tags" in captured[hostname]):
+                    for tag in captured[hostname]["tags"]:
+                        if (tag not in env.dart["tags"]):
+                            env.dart["tags"][tag] = []
+                        env.dart["tags"][tag].append(hostname)
+
+                # create a tag called "all" so we can deploy to every host in one command
+                if ("all" not in env.dart["tags"]):
+                    env.dart["tags"]["all"] = []
+                env.dart["tags"]["all"].append(hostname)
+
+                # add hostname and nocref targets
+                env.dart["servers"][hostname] = captured[hostname].get("targets")
+        except Exception as e:
+            warn("Could not decode dart host list: {}".format(repr(e)))
 
 
 class CleanTask(Task):
