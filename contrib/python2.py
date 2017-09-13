@@ -45,8 +45,8 @@ class PythonBuildTask(pushlib.BuildTask):
 
         # we are NOT copying bin or lib because python handles those for us.
         # but we do still care about these other ones.
-        for path in ['etc', 'web', 'www']:
-            execute(pushlib.CopyDirectoryTask(), path)
+        for x in ['etc', 'web', 'www']:
+            execute(pushlib.CopyDirectoryTask(), x)
 
     def build(self):
         # if we're running a virtualenv the we need to reload the defaults
@@ -144,6 +144,7 @@ class PythonArchiveTask(pushlib.ArchiveTask):
 
         # remove empty directories
         local("{} {} -type d -empty -delete".format(env.tools['find'], env.release_dir))
+
 
 class PythonLiveTask(pushlib.LiveTask):
     __doc__ = pushlib.LiveTask.__doc__

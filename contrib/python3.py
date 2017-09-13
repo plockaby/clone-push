@@ -45,8 +45,8 @@ class PythonBuildTask(pushlib.BuildTask):
 
         # we are NOT copying bin or lib because python handles those for us.
         # but we do still care about these other ones.
-        for path in ['etc', 'web', 'www']:
-            execute(pushlib.CopyDirectoryTask(), path)
+        for x in ['etc', 'web', 'www']:
+            execute(pushlib.CopyDirectoryTask(), x)
 
     def build(self):
         # if we're running a virtualenv then we need to reload the defaults
