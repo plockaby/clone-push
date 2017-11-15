@@ -442,18 +442,13 @@ class DeployTask(Task):
         if (not os.path.isfile("{}/{}".format(env.archive_dir, env.archive_name))):
             abort("No archive file found. Cannot distribute project.")
 
-        # we're going to put it into /tmp
-        remote_archive_file = "/tmp/{}".format(os.path.basename(archive_file))
-
         # figure out where things are on the remote host
-        remote_rm = run("which rm", quiet=True)
-        remote_mkdir = run("which mkdir", quiet=True)
-        remote_tar = run("which tar", quiet=True)
+        remote_tar = local("{} {} which tar".format(env.tools["ssh"], env.host_string), capture=True)
+        remote_sudo = local("{} {} which sudo".format(env.tools["ssh"], env.host_string), capture=True)
 
-        put(archive_file, remote_archive_file)
-        sudo("{} -p {}".format(remote_mkdir, remote_path), user=remote_user)
-        sudo("{} zxf {} -C {} -p --no-same-owner --overwrite-dir".format(remote_tar, remote_archive_file, remote_path), user=remote_user)
-        run("{} -f {}".format(remote_rm, remote_archive_file))
+        # unpack the tar file over the ssh link. we are assuming that the path
+        # to tar on the remote host is the same as it is on the local host.
+        local("{} {} | {} {} {} -u {} \"{} zxf - -C {} -p --no-same-owner --overwrite-dir\"".format(env.tools["cat"], archive_file, env.tools["ssh"], env.host_string, remote_sudo, remote_user, remote_tar, remote_path))
 
         # call after hooks
         self.after(**kwargs)
@@ -504,9 +499,11 @@ class CleanUpTask(Task):
             print(cyan("Removing {} from {}.".format(remote_path, env.host_string)))
 
             # figure out where things are on the remote host
-            remote_rm = run("which rm", quiet=True)
+            remote_rm = local("{} {} which rm".format(env.tools["ssh"], env.host_string), capture=True)
+            remote_sudo = local("{} {} which sudo".format(env.tools["ssh"], env.host_string), capture=True)
 
-            sudo("{} -rf {}".format(remote_rm, remote_path), user=remote_user)
+            # this will ssh as the current user and THEN sudo.
+            local("{} {} {} -u {} {} -rf {}".format(env.tools["ssh"], env.host_string, remote_sudo, remote_user, remote_rm, remote_path))
 
 
 class CopyDirectoryTask(Task):
