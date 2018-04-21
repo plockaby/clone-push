@@ -93,8 +93,8 @@ with settings(hide("running", "stdout"), warn_only=True):
     # a dict, keyed by tag, value is an array of hostnames
     env.dart["tags"] = dict()
 
-    # a dict, keyed by hostname, value is None
-    env.dart["servers"] = dict()
+    # a set of all hosts
+    env.dart["servers"] = set()
 
     # only load hosts if we're going to do a live push
     load_dart_hosts = False
@@ -116,13 +116,8 @@ with settings(hide("running", "stdout"), warn_only=True):
                             env.dart["tags"][tag] = []
                         env.dart["tags"][tag].append(hostname)
 
-                # create a tag called "all" so we can deploy to every host in one command
-                if ("all" not in env.dart["tags"]):
-                    env.dart["tags"]["all"] = []
-                env.dart["tags"]["all"].append(hostname)
-
-                # add hostname
-                env.dart["servers"][hostname] = None
+                # add hostname to a set
+                env.dart["servers"].add(hostname)
         except Exception as e:
             warn("Could not decode dart host list: {}".format(repr(e)))
 
@@ -306,10 +301,9 @@ class LiveTask(Task):
         # these are the hosts that we might deploy to
         hosts = []
 
-        # if no roles were given then we can't deploy to anything. the roles
-        # come from "live:rolename".
+        # if no name is given then push to ourselves
         if (len(roles) == 0):
-            abort("Must specify at least one server or tag.")
+            hosts = [env.hostname]
 
         # look at everything in the argument list and if it is a defined role
         # then add the defined role.
@@ -317,7 +311,7 @@ class LiveTask(Task):
             # is the role a tag name? if it is then get all of the hosts
             # that the tag maps to and add them to the list
             if (role in env.dart["tags"]):
-                hosts += env.dart["tags"][role]
+                hosts += env.dart["tags"].get(role, [])
 
             # is the role a host name?
             if (role in env.dart["servers"]):
