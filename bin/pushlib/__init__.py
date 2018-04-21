@@ -86,6 +86,9 @@ else:
 # the name of the archive we will create when asked to create the archive.
 env.archive_name = "{}-{}-v{}.tar.gz".format(env.project_name, env.project_component, env.repo_commit_name)
 
+# where am i
+env.hostname = socket.getfqdn()
+
 # collect our host information
 with settings(hide("running", "stdout"), warn_only=True):
     env.dart = dict()
@@ -439,12 +442,12 @@ class DeployTask(Task):
             abort("No archive file found. Cannot distribute project.")
 
         # figure out where things are on the remote host
-        remote_tar = local("{} {} which tar".format(env.tools["ssh"], env.host_string), capture=True)
-        remote_sudo = local("{} {} which sudo".format(env.tools["ssh"], env.host_string), capture=True)
+        remote_tar = local("{} -o ConnectTimeout=10 {} which tar".format(env.tools["ssh"], env.host_string), capture=True)
+        remote_sudo = local("{} -o ConnectTimeout=10 {} which sudo".format(env.tools["ssh"], env.host_string), capture=True)
 
         # unpack the tar file over the ssh link. we are assuming that the path
         # to tar on the remote host is the same as it is on the local host.
-        local("{} {} | {} {} {} -u {} \"{} zxf - -C {} -p --no-same-owner --overwrite-dir\"".format(env.tools["cat"], archive_file, env.tools["ssh"], env.host_string, remote_sudo, remote_user, remote_tar, remote_path))
+        local("{} {} | {} -o ConnectTimeout=10 {} {} -u {} \"{} zxf - -C {} -p --no-same-owner --overwrite-dir\"".format(env.tools["cat"], archive_file, env.tools["ssh"], env.host_string, remote_sudo, remote_user, remote_tar, remote_path))
 
         # call after hooks
         self.after(**kwargs)
@@ -495,11 +498,11 @@ class CleanUpTask(Task):
             print(cyan("Removing {} from {}.".format(remote_path, env.host_string)))
 
             # figure out where things are on the remote host
-            remote_rm = local("{} {} which rm".format(env.tools["ssh"], env.host_string), capture=True)
-            remote_sudo = local("{} {} which sudo".format(env.tools["ssh"], env.host_string), capture=True)
+            remote_rm = local("{} -o ConnectTimeout=10 {} which rm".format(env.tools["ssh"], env.host_string), capture=True)
+            remote_sudo = local("{} -o ConnectTimeout=10 {} which sudo".format(env.tools["ssh"], env.host_string), capture=True)
 
             # this will ssh as the current user and THEN sudo.
-            local("{} {} {} -u {} {} -rf {}".format(env.tools["ssh"], env.host_string, remote_sudo, remote_user, remote_rm, remote_path))
+            local("{} -o ConnectTimeout=10 {} {} -u {} {} -rf {}".format(env.tools["ssh"], env.host_string, remote_sudo, remote_user, remote_rm, remote_path))
 
 
 class CopyDirectoryTask(Task):
