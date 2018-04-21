@@ -360,15 +360,7 @@ class CloneTask(Task):
         pass
 
     def run(self):
-        # run prereqs
-        execute("archive")
-
-        # when we deploy to ref we want to update the registration, too
-        execute('register')
-
-        # call before hooks
-        self.before()
-
+        # don't even bother building if there is no tag
         if (str(env.get("no_tag", os.environ.get("NO_TAG", False))) not in ["True", "1"]):
             if (env.repo_is_dirty and not confirm(red("Repository is dirty and therefore not tagged. Deploy anyway?"))):
                 abort("Aborting at user request.")
@@ -392,6 +384,16 @@ class CloneTask(Task):
         else:
             print(yellow("Not checking to see if the project is tagged because 'no_tag' is set."))
 
+        # run prereqs
+        execute("archive")
+
+        # when we deploy to ref we want to update the registration, too
+        execute('register')
+
+        # call before hooks
+        self.before()
+
+        # actually send it to the host
         with settings(hosts=env.clone_host):
             execute("deploy",
                     archive_file="{}/{}".format(env.archive_dir, env.archive_name),
