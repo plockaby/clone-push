@@ -1,1 +1,39 @@
-bin/push
+#!/usr/bin/env python3
+import sys
+from invoke import Program, Collection
+from invoke.config import Config, merge_dicts
+
+
+# do not write bytecode
+sys.dont_write_bytecode = True
+
+
+# this modifies the config file searching and makes it search for these files:
+#    /etc/push.yaml
+#    ~/.push.yaml
+#    push.yaml
+#    PUSH_RUN_ECHO  <- environment variable example
+class AppConfig(Config):
+    prefix = "push"
+
+    @staticmethod
+    def global_defaults():
+        their_defaults = Config.global_defaults()
+        my_defaults = {
+            "run": {
+                "echo": True,
+                "pty": True,
+            },
+        }
+        return merge_dicts(their_defaults, my_defaults)
+
+
+if (__name__ == "__main__"):
+    from pushlib import loader, __version__
+    program = Program(
+        binary="push",
+        version=__version__,
+        config_class=AppConfig,
+        namespace=Collection.from_module(loader),
+    )
+    sys.exit(program.run())
