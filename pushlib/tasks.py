@@ -2,9 +2,7 @@ from invoke import Task, run
 from .tools import copy, warn, abort, confirm
 from . import colors
 from . import env
-import sys
 import os
-import re
 
 
 # these are the classes that we will let modules override
@@ -154,20 +152,6 @@ class CloneTask(TaskWrapper):
             if (env.repo_tag_name is None and not confirm("This revision is not tagged. Deploy anyway?")):
                 warn("This revision is not tagged.")
                 abort("Aborting at user request.")
-
-            if (not env.repo_is_dirty and env.repo_tag_name is not None):
-                # tag must look like: v#.#.# or v#.#.#-asdf
-                valid_tag_pattern = re.compile(r"^v\d+\.\d+\.\d+($|\-)")
-                if (not valid_tag_pattern.match(env.repo_tag_name)):
-                    if (not confirm("Repository tag {} does not match format vX.Y.Z. Deploy anyway?".format(env.repo_tag_name))):
-                        abort("Aborting at user request.")
-                else:
-                    print(colors.green("Project is tagged at version {} and ready for release.".format(env.repo_tag_name)))
-            else:
-                if (env.repo_is_dirty):
-                    warn("Repository is dirty and therefore not properly tagged.")
-                if (env.repo_tag_name is None):
-                    warn("This revision is not tagged.")
         else:
             print(colors.yellow("Not checking to see if the project is tagged because 'no_tag' is set."))
 
