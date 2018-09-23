@@ -14,9 +14,8 @@ be written before it can be deployed. So follow these steps to get those
 created.
 
 
-1. Edit `bin/config.py`. You can change the paths in here for things like `ssh`
-and `rsync`. However, there are a few specific configuration value that MUST be
-set. These can all be overridden in a project's `.pushrc` file.
+1. Edit `pushlib/loader.py`. There are a few specific configuration value that
+MUST be set. These can all be overridden in a project's `.pushrc` file.
 
 
     * `env.clone_base_dir` is the path on your clone system (see
@@ -40,13 +39,10 @@ set. These can all be overridden in a project's `.pushrc` file.
       something like `www` or `ops`.
 
 
-2. Copy `bin/servers.py.example` to `bin/servers.py`. This is where you set all
-   of the servers to which you might deploy manually. There is only one mostly
-   required server on this list:
-
-
-    * `clone` should be to the hostname of the server where the `clone`
-       system is installed.
+2. Maybe modify `pushlib/hosts.py`. This is where hosts are defined by either
+   name or tag. Right now the host is list loaded from a tool called
+   [dart](https://github.com/plockaby/dart) but you can get the list of hosts
+   from wherever you want.
 
 
 3. You may decide to install `push` to the `clone` system so that it may be
@@ -56,21 +52,22 @@ set. These can all be overridden in a project's `.pushrc` file.
 
     * To deploy to the local host you can run this:
 
-          ./push live
+          ./push live localhost
 
       That will deploy the project to the same system on which you are
       currently running. It will do the deployment with `ssh` and `sudo`.
 
     * To deploy to a host defined in `bin/servers.py` you can run this:
 
-          ./push live:some-host
+          ./push live some-host
 
       That will deploy the project to the system defined in your server
       configuration list. It will do the deplyment with `ssh` and `sudo`.
 
-    * To deploy to an abritrary host you can use Fabric options:
+    * To deploy to an abritrary host you can use that host name and confirm
+      that you're ok with deploying to that host.
 
-          ./push -H random-host live
+          ./push live random-host
 
     * To deploy to the `clone` system you can run this:
 
@@ -98,9 +95,8 @@ are examples of other deployment types in the `/contrib` directory.
   your project into the `push/common` directory on your `clone` system:
 
 
-      #!/usr/bin/env python2.7
-      from pushlib.copy import *
-      from fabric.api import env
+      # vi:syntax=python
+      from pushlib.modules.perl import *
       env.clone_path = "push/common"
 
 
@@ -108,54 +104,25 @@ are examples of other deployment types in the `/contrib` directory.
   make it also copy the `foobar` directory, for example:
 
 
-      #!/usr/bin/env python2.7
-      from pushlib.copy import *
-      from fabric.api import env, execute
+      # vi:syntax=python
+      from pushlib.modules.perl import *
+      from pushlib.tools import copy
       env.clone_path = "push/common"
 
 
-      class CustomBuildTask(CopyBuildTask):
-          __doc__ = pushlib.BuildTask.__doc__
+      class BuildTask(BuildTask):
+          def before(self, c):
+              super().before(c)
 
-          def run(self):
-              super(CustomBuildTask, self).run()
-
-              for path in ['bin', 'lib', 'etc', 'web', 'www', 'foobar']:
-                  execute(CopyDirectoryTask(), path)
-
-
-      buildTask = CustomBuildTask()
+              for path in ["foobar"]:
+                  copy("foobar")
 
 
   To override where files go -- for example, to have files in the project's bin
   directory deploy to foobar/bin -- you can use this example:
 
 
-      execute(CopyDirectoryTask(), 'bin', 'foobar/bin')
-
-
-You can combine multiple deployment types using multiple inheritance. For
-example, if you have a deployment type for Perl projects and you want to run
-JSLint against your project, too, you might write a `.pushrc` file like this:
-
-
-    #!/usr/bin/env python2.7
-    from pushlib.perl import *
-    from pushlib.jslint import *
-    from fabric.api import env
-    env.clone_path = "push/common"
-
-
-    class CustomBuildTask(PerlBuildTask, JSLintBuildTask):
-        __doc__ = pushlib.BuildTask.__doc__
-
-
-    class CustomTestTask(PerlTestTask, JSLintTestTask):
-        __doc__ = pushlib.TestTask.__doc__
-
-
-    buildTask = CustomBuildTask()
-    testTask  = CustomTestTask()
+      copy("bin", "foobar/bin")
 
 
 If the multiple deployment types implement other tasks such as `Clean` or
@@ -166,30 +133,21 @@ If the multiple deployment types implement other tasks such as `Clean` or
 
 
     $ push -l
-    Available commands:
+    Subcommands:
 
-        archive      creates an archive for deployment
-        build        builds a copy of the project for testing and deployment
-        clean        removes all built content
-        clone        deploys the project to clone
-        deploy       given a username, the path to an archive file, and the path on the remote host, untar the file on the remote hosts as the given user
-        live         deploy the project locally or use "live:nickname" to deploy to a particular server
-        test         run tests
-
-
-You can add more tasks in your project's `.pushrc` file like this:
+      archive       create deployment archive
+      build         build the project
+      clean         remove all build artifacts
+      clone         deploy the project to clone
+      live          deploy the project using "live nickname" to deploy to a particular host
+      mostlyclean   remove most build artifacts
+      register      registers the task with dart if a .dartrc file is present
+      test          run project tests
 
 
-    from fabric.api import env, task, local
-
-    @task
-    def foo():
-        local("ls {}".format(env.release_dir))
-
-
-You can also implement a subclassed version of one of the existing targets to
-override its functionality. Going the subclassed route is probably best because
-it ensures the enforcement of prerequisites for each target.
+You can implement a subclassed version of one of these tasks to override its
+functionality. Going the subclassed route is probably best because it ensures
+the enforcement of prerequisites for each target.
 
 An important note is that by default `push` only adds new files. `push` does
 not remove files from remote hosts that have been removed from your project.
@@ -217,35 +175,17 @@ After building the project this will run all tests.
 After building and testing the project this creates a deployment archive of the
 project. The deployment archive is exactly what will get sent to the host.
 
-* **live**
-
-Installs the project on the local host. It does this over `ssh`. All files are
-installed using `sudo` to the configured user. The archived file is placed
-under `/tmp` before deployment and then removed after deployment.
-
-* **live:nickname**
+* **live nickname**
 
 Installs the project on a remote host where the nickname is the host alias
-defined in the `servers.py` file. It does this over `ssh`. All files are
-installed using `sudo` on the remote host to the configured user. The archived
-file is placed under `/tmp` before deployment and then removed after
-deployment.
-
-* **deploy**
-
-Deploys a tar file to a remote host. By default this will deploy the created
-archive and ask for the host to which to deploy using the configured user.
-Normally this task will be called by _live_ and _clone_ rather than directly.
-The arguments that can be used when calling this method directly include:
-`archive_name`, `remote_user`, `remote_path`, and `check_for_tag`. This task
-expects the host to be defined in `env.host_string`.
+defined in the `hosts.py` file. It does this over `ssh`. All files are
+installed using `sudo` on the remote host to the configured user.
 
 * **clone**
 
 Installs the project into the defined `clone_path` directory on the `clone`
 host. It does this over `ssh`. All files are installed using `sudo` on the
-defined `clone` host to the configured user. The archived file is placed under
-`/tmp` before deployment and then removed after deployment.
+defined `clone` host to the configured user.
 
 
 ### Controlling `push`
@@ -253,16 +193,11 @@ defined `clone` host to the configured user. The archived file is placed under
 There are several flags that can be used to control the operation of push.
 These flags can all be passed to push like this:
 
-    push --set=no_tag=1 ...
-
-The values "True" or "1" will enable setting and anything else will disable the
-setting. These flags can usually also be set with environment variables like
-this:
-
     NO_TAG=1 push ...
 
-The other way to set this flags is permanently in the project's `.pushrc` file
-like this:
+The values "True" or "1" will enable setting and anything else will disable the
+setting. The other way to set this flags is permanently in the project's
+`.pushrc` file like this:
 
     env.no_tag = True
     env.no_tag = 1
@@ -292,8 +227,6 @@ following variables using Fabric's global `env` variable.
 * `env.release_dir` The full path to the directory where the release will be
   created. Basically, anything that goes in here will be deployed when the
   project is deployed.
-* `env.temp_dir` The full path to a temporary directory that may be used when
-  `push` is doing its work.
 * `env.git_root_dir` The full path to the root of the git repository in which
   the project is contained.
 * `env.repo_commit_name`
@@ -304,29 +237,22 @@ following variables using Fabric's global `env` variable.
   directory.
 * `env.archive_name` The name of the archive created when running the archive
   task.
-* `env.tar_x_flags` Flags to pass to `tar` when extracting a tar archive.
-* `env.tar_c_flags` Flags to pass to `tar` when creating a tar archive.
-* `env.rsync_flags` Flags to pass to `rsync`.
-* `env.servers` A dict containing all of the servers that are configured for
-  deployment.
 * `env.clone_base_dir` The root clone source directories.
 * `env.clone_path` The clone source directory to use when deploying to `clone`.
 * `env.host_path` The directory to deploy your project to on remote systems.
 * `env.host_user` The user to `sudo` to when deploying to remote systems.
-* `env.git` The path to the `git` program.
-* `env.tar` The path to the `tar` program.
-* `env.rsync` The path to the `rsync` program.
 
 
 ### Prerequisites
 
 This software requires:
 
-* Python 2.7
-* Fabric
+* Python 3
+* Invoke
 * rsync
-* GNU tar
 * git
+
+It also requires standard system utilities in your path like `ssh` and `sudo`.
 
 
 ### Credits and Copyright
