@@ -12,6 +12,7 @@ __all__ = [
     "BuildTask",
     "TestTask",
     "ArchiveTask",
+    "RegisterTask",
     "CloneTask",
     "LiveTask",
     "DeployTask",
