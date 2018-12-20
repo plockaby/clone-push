@@ -23,12 +23,12 @@ env.clone_path = "push/common"
 # this is the username that we will use to connect to other hosts. this is
 # probably something like "www". this user must be able to install things
 # on the remote system
-env.host_user = "data"
+env.host_user = "www"
 
 # this is the path on the remote system to which the project should be
 # deployed. this might be something like "/netops" and it can be set in the
 # project's .pushrc file but you can set a default value here.
-env.host_path = "/srv/data"
+env.host_path = "/srv/www"
 
 # define paths for doing work
 env.push_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
