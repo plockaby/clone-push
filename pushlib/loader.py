@@ -23,7 +23,7 @@ env.clone_path = "push/common"
 # this is the username that we will use to connect to other hosts. this is
 # probably something like "www". this user must be able to install things
 # on the remote system
-env.host_user = "www"
+env.host_user = "www-data"
 
 # this is the path on the remote system to which the project should be
 # deployed. this might be something like "/netops" and it can be set in the
