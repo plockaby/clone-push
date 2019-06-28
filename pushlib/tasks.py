@@ -149,7 +149,7 @@ class CloneTask(TaskWrapper):
         if (str(env.get("no_tag", os.environ.get("NO_TAG", False))) not in ["True", "1"]):
             if (env.repo_is_dirty and not confirm("Repository is dirty and therefore not properly tagged. Deploy anyway?")):
                 abort("Aborting at user request.")
-            if (env.repo_tag_name is None and not confirm("This revision is not tagged. Deploy anyway?")):
+            if (len(env.repo_tag_names) == 0 and not confirm("This revision is not tagged. Deploy anyway?")):
                 warn("This revision is not tagged.")
                 abort("Aborting at user request.")
         else:
@@ -217,7 +217,7 @@ class LiveTask(Task):
         self.before(c, hosts)
 
         # don't do it in parallel, sometimes the plugin modules have prompts.
-        for host in hosts:
+        for host in sorted(hosts):
             env.deploy(
                 archive="{}/{}".format(env.archive_dir, env.archive_name),
                 remote_user=env.host_user,

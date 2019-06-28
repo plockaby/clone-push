@@ -57,14 +57,16 @@ git_branch_count = int(run("ls {}/.git/refs/heads/ | wc -l | tr -d ' '".format(e
 if (git_branch_count > 0):
     env.repo_commit_name = run("git log -1 | head -n 1", hide=True, warn=True).stdout.replace("commit", "").strip()
     env.repo_branch_name = run("git rev-parse --abbrev-ref HEAD", hide=True, warn=True).stdout.strip()
-    env.repo_tag_name = run("git describe --tags --exact-match", hide=True, warn=True).stdout.strip()
+    env.repo_tag_names = run("git tag --contains {}".format(env.repo_commit_name), hide=True, warn=True).stdout.strip()
 
 if (env.get("repo_commit_name", "") == ""):
     env.repo_commit_name = "HEAD"
 if (env.get("repo_branch_name", "") == ""):
     env.repo_branch_name = "HEAD"
-if (env.get("repo_tag_name", "") == ""):
-    env.repo_tag_name = None
+if (env.get("repo_tag_names", "") == ""):
+    env.repo_tag_names = []
+else:
+    env.repo_tag_names = env.repo_tag_names.split("\n")
 
 # is set to "true" if the repository is dirty
 git_dirty_state = run("git status -s", hide=True, warn=True).stdout.strip()
