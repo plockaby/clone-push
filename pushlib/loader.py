@@ -53,8 +53,9 @@ if (not os.path.exists("{}/.pushrc".format(os.getcwd()))):
     abort("Could not find .pushrc file in current directory.")
 
 # get the latest commit/tag and branch of the repo or HEAD if no commit/tag and/or branch
-git_branch_count = int(run("ls {}/.git/refs/heads/ | wc -l | tr -d ' '".format(env.git_root_dir), hide=True, warn=True).stdout.strip())
-if (git_branch_count > 0):
+git_objects_count = int(run("find {}/.git/objects -type f | wc -l | tr -d ' '".format(env.git_root_dir), hide=True, warn=True).stdout.strip())
+if (git_objects_count > 0):
+    # if we are in here then it means that at least one commit has been made
     env.repo_commit_name = run("git log -1 | head -n 1", hide=True, warn=True).stdout.replace("commit", "").strip()
     env.repo_branch_name = run("git rev-parse --abbrev-ref HEAD", hide=True, warn=True).stdout.strip()
     env.repo_tag_names = run("git tag --contains {}".format(env.repo_commit_name), hide=True, warn=True).stdout.strip()
