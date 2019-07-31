@@ -4,7 +4,7 @@ from pushlib.tools import copy, abort
 
 
 # which clone target do we want to deploy to
-env.clone_path = "push/common"
+env.clone_path = "push/push"
 
 # we want to skip running gitattributes
 # env.skip_attributes = True
