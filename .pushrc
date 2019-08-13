@@ -6,17 +6,15 @@ from pushlib.tools import copy, abort
 # which clone target do we want to deploy to
 env.clone_path = "push/push"
 
-# we want to skip running gitattributes
-# env.skip_attributes = True
-
 # we also want to skip tests on ourself
 # env.skip_tests = True
 
-# don't want to create wrappers for anything in bin/sbin
-# env.skip_wrappers = True
-
 # don't want to require a tag
 # env.no_tag = True
+
+# don't want to create wrappers for anything in bin/sbin (only used by the
+# wrappers contrib module.)
+# env.skip_wrappers = True
 
 # we want to remove the old push directory
 env.force_clean_remote = True
