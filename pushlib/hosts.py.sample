@@ -1,0 +1,12 @@
+# NOTE: this dict can be populated many different ways!
+hosts = {
+    # a dict, keyed by tag, value is an array of hostnames
+    "tags": {},
+
+    # a dict, keyed by hostname, value is an array of clone targets
+    "servers": {
+        "localhost": [],
+        "dev.lockaby.org": [],
+        "forge.lockaby.org": [],
+    },
+}

@@ -12,7 +12,6 @@ __all__ = [
     "BuildTask",
     "TestTask",
     "ArchiveTask",
-    "RegisterTask",
     "CloneTask",
     "LiveTask",
     "DeployTask",
@@ -145,7 +144,7 @@ class CloneTask(TaskWrapper):
     def run(self, c):
         """deploy the project to clone"""
 
-        # don't even bother registering or building if there is no tag
+        # don't even bother if there is no tag
         if (str(env.get("no_tag", os.environ.get("NO_TAG", False))) not in ["True", "1"]):
             if (env.repo_is_dirty and not confirm("Repository is dirty and therefore not properly tagged. Deploy anyway?")):
                 abort("Aborting at user request.")
@@ -271,20 +270,3 @@ class DeployTask(object):
 
     def after(self, **kwargs):
         pass
-
-
-class RegisterTask(TaskWrapper):
-    name = "register"
-
-    def run(self, c):
-        """registers the task with dart if a .dartrc file is present"""
-
-        # call before hooks
-        self.before(c)
-
-        if (os.path.isfile("{}/.dartrc".format(env.current_dir))):
-            print(colors.cyan("Registering .dartrc from {} with dart.".format(env.current_dir)))
-            c.run("cat {}/.dartrc | dart-config register -".format(env.current_dir))
-
-        # call after hooks
-        self.after(c)
