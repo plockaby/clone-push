@@ -31,7 +31,8 @@ class TestTask(TestTask):
 
         # run pycodestyle against this project. this runs against pythone files
         # in the test directory, copied above.
-        test = c.run("find {} -type f -print0 | xargs -0 pycodestyle --ignore=E203,E241,E501".format(env.test_dir), warn=True)
+        ignore = ['E121', 'E123', 'E126', 'E133', 'E226', 'E241', 'E242', 'E704', 'W503', 'W504', 'W505', 'E501']
+        test = c.run("find {} -type f -print0 | xargs -0 pycodestyle --ignore={}".format(env.test_dir, ",".join(ignore)), warn=True)
         if (not test.ok):
             abort("Tests failed.")
 
