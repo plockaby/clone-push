@@ -137,6 +137,7 @@ class ArchiveTask(ArchiveTask):
         # get rid of cruft that isn't useful to us
         c.run("find {}/{} -name \"*.egg-info\" -exec rm -rf {{}} +".format(env.python_release_dir, env.python_release_lib_dir))
         c.run("find {}/{} -name \".eggs\" -exec rm -rf {{}} +".format(env.python_release_dir, env.python_release_lib_dir))
+        c.run("find {}/{} -name \"*.pth\" -exec rm -rf {{}} +".format(env.python_release_dir, env.python_release_lib_dir))
         c.run("find {} -path {}/venv -prune -o -type d -name \"__pycache__\" -print -exec rm -rf {{}} +".format(env.release_dir, env.release_dir))
         c.run("find {} -path {}/venv -prune -o -type f -name \"*.pyc\" -print -exec rm -rf {{}} +".format(env.release_dir, env.release_dir))
 
