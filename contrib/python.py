@@ -74,10 +74,6 @@ class BuildTask(BuildTask):
 
                 # really build
                 self._build(c)
-
-            # make it so that we can move the virtualenv
-            with c.cd(env.python_virtualenv_root_dir):
-                c.run("{} --relocatable {}".format(system_python_virtualenv, virtualenv_name))
         else:
             # really build
             self._build(c)
